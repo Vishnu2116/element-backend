@@ -62,4 +62,37 @@ const uploadMultiple = wrap(combined,    'array');    // (fieldName, maxCount)
 const uploadImage    = wrap(imageUpload, 'single');   // (fieldName) — images only, 5 MB
 const uploadPdf      = wrap(pdfUpload,   'single');   // (fieldName) — PDF only, 20 MB
 
-module.exports = { uploadSingle, uploadMultiple, uploadImage, uploadPdf };
+// uploadFields — multi-field upload with per-field type enforcement.
+// fields: [{ name, maxCount, type }]  where type is 'image' | 'pdf' | 'any'
+// Example: uploadFields([{ name:'file', type:'pdf' }, { name:'thumbnail', type:'image' }])
+const uploadFields = (fields) => {
+  const typeMap = Object.fromEntries(fields.map(f => [f.name, f.type || 'any']));
+
+  const filter = (req, file, cb) => {
+    const expected = typeMap[file.fieldname] || 'any';
+    if (expected === 'image') {
+      if (IMAGE_MIME.test(file.mimetype) && IMAGE_EXT.test(file.originalname)) return cb(null, true);
+      return cb(makeError(`"${file.fieldname}" must be an image (jpeg, jpg, png, webp)`));
+    }
+    if (expected === 'pdf') {
+      if (PDF_MIME.test(file.mimetype) && PDF_EXT.test(file.originalname)) return cb(null, true);
+      return cb(makeError(`"${file.fieldname}" must be a PDF`));
+    }
+    const ok = (IMAGE_MIME.test(file.mimetype) && IMAGE_EXT.test(file.originalname)) ||
+               (PDF_MIME.test(file.mimetype)   && PDF_EXT.test(file.originalname));
+    if (ok) return cb(null, true);
+    cb(makeError('Invalid file type'));
+  };
+
+  const instance = multer({ storage, fileFilter: filter, limits: { fileSize: 20 * 1024 * 1024 } });
+  const multerFields = fields.map(f => ({ name: f.name, maxCount: f.maxCount || 1 }));
+
+  return (req, res, next) => {
+    instance.fields(multerFields)(req, res, (err) => {
+      if (err) return res.status(err.status || 400).json({ error: err.message });
+      next();
+    });
+  };
+};
+
+module.exports = { uploadSingle, uploadMultiple, uploadImage, uploadPdf, uploadFields };
