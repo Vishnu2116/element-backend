@@ -20,6 +20,7 @@ const IMAGE_MIME = /^image\/(jpeg|png|webp)$/;
 const IMAGE_EXT  = /\.(jpe?g|png|webp)$/i;
 const PDF_MIME   = /^application\/pdf$/;
 const PDF_EXT    = /\.pdf$/i;
+const KML_EXT    = /\.kml$/i;
 
 function makeError(msg) {
   const err = new Error(msg);
@@ -37,6 +38,12 @@ const pdfFilter = (req, file, cb) => {
   cb(makeError('Invalid file type. Allowed: pdf'));
 };
 
+const kmlFilter = (req, file, cb) => {
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (ext !== '.kml') return cb(makeError('Only .kml files are allowed'), false);
+  cb(null, true);
+};
+
 const combinedFilter = (req, file, cb) => {
   const isImage = IMAGE_MIME.test(file.mimetype) && IMAGE_EXT.test(file.originalname);
   const isPdf   = PDF_MIME.test(file.mimetype)   && PDF_EXT.test(file.originalname);
@@ -47,6 +54,7 @@ const combinedFilter = (req, file, cb) => {
 const imageUpload = multer({ storage, fileFilter: imageFilter,   limits: { fileSize: 5  * 1024 * 1024 } });
 const pdfUpload   = multer({ storage, fileFilter: pdfFilter,     limits: { fileSize: 20 * 1024 * 1024 } });
 const combined    = multer({ storage, fileFilter: combinedFilter, limits: { fileSize: 20 * 1024 * 1024 } });
+const kmlUpload   = multer({ storage, fileFilter: kmlFilter,     limits: { fileSize: 10 * 1024 * 1024 } });
 
 function wrap(instance, method) {
   return (...args) => (req, res, next) => {
@@ -61,6 +69,7 @@ const uploadSingle   = wrap(combined,    'single');   // (fieldName)
 const uploadMultiple = wrap(combined,    'array');    // (fieldName, maxCount)
 const uploadImage    = wrap(imageUpload, 'single');   // (fieldName) — images only, 5 MB
 const uploadPdf      = wrap(pdfUpload,   'single');   // (fieldName) — PDF only, 20 MB
+const uploadKml      = wrap(kmlUpload,   'single');   // (fieldName) — KML only, 10 MB
 
 // uploadFields — multi-field upload with per-field type enforcement.
 // fields: [{ name, maxCount, type }]  where type is 'image' | 'pdf' | 'any'
@@ -95,4 +104,4 @@ const uploadFields = (fields) => {
   };
 };
 
-module.exports = { uploadSingle, uploadMultiple, uploadImage, uploadPdf, uploadFields };
+module.exports = { uploadSingle, uploadMultiple, uploadImage, uploadPdf, uploadKml, uploadFields };

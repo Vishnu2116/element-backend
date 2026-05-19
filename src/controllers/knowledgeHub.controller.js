@@ -183,11 +183,31 @@ const getWhatsNew = async (req, res) => {
     if (cached) return res.json(JSON.parse(cached));
 
     const { rows } = await pool.query(
-      `SELECT * FROM knowledge_hub_documents
+      `SELECT id, title, 'knowledge_hub' AS source,
+              type AS item_type, file_path, created_at
+       FROM knowledge_hub_documents
+       WHERE is_active = true
+         AND created_at >= NOW() - INTERVAL '30 days'
+       UNION ALL
+       SELECT id, title, 'event' AS source,
+              'event' AS item_type, NULL AS file_path, created_at
+       FROM events
+       WHERE is_active = true
+         AND created_at >= NOW() - INTERVAL '30 days'
+       UNION ALL
+       SELECT id, title, 'procurement' AS source,
+              type AS item_type, file_path, created_at
+       FROM procurements
+       WHERE is_active = true
+         AND created_at >= NOW() - INTERVAL '30 days'
+       UNION ALL
+       SELECT id, title, 'project' AS source,
+              'project' AS item_type, NULL AS file_path, created_at
+       FROM projects
        WHERE is_active = true
          AND created_at >= NOW() - INTERVAL '30 days'
        ORDER BY created_at DESC
-       LIMIT 10`
+       LIMIT 20`
     );
     await redis.set(cacheKey, JSON.stringify(rows), { EX: 3600 });
     return res.json(rows);

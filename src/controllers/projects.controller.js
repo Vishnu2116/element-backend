@@ -62,7 +62,7 @@ function toBool(val, fallback) {
 }
 
 async function bustProjectCaches(slug, componentId) {
-  const keys = ['cache:projects', 'cache:home:project-highlights'];
+  const keys = ['cache:projects', 'cache:home:project-highlights', 'cache:home:whats-new'];
   if (slug)        keys.push(`cache:project:${slug}`);
   if (componentId) keys.push(`cache:project-component:${componentId}`);
   await Promise.all(keys.map(k => redis.del(k)));
@@ -360,6 +360,7 @@ const update = async (req, res) => {
     const keys = [
       'cache:projects',
       'cache:home:project-highlights',
+      'cache:home:whats-new',
       `cache:project:${prev.slug}`,
       `cache:project:${slug}`,
       ...[...affectedComponents].map(cid => `cache:project-component:${cid}`),
@@ -402,6 +403,7 @@ const remove = async (req, res) => {
     const keys = [
       'cache:projects',
       'cache:home:project-highlights',
+      'cache:home:whats-new',
       `cache:project:${project.slug}`,
     ];
     if (project.component_id) keys.push(`cache:project-component:${project.component_id}`);

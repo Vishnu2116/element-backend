@@ -128,7 +128,10 @@ const create = async (req, res) => {
       [title.trim(), slug, description || null, event_date, coverPath, toBool(is_active, true)]
     );
 
-    await redis.del('cache:media:events');
+    await Promise.all([
+      redis.del('cache:media:events'),
+      redis.del('cache:home:whats-new'),
+    ]);
     return res.status(201).json(rows[0]);
   } catch (err) {
     console.error('events.create:', err.message);
@@ -198,6 +201,7 @@ const update = async (req, res) => {
       redis.del('cache:media:events'),
       redis.del(`cache:media:event:${prev.slug}`),
       prev.slug !== slug ? redis.del(`cache:media:event:${slug}`) : Promise.resolve(),
+      redis.del('cache:home:whats-new'),
     ]);
     return res.json(rows[0]);
   } catch (err) {
@@ -232,6 +236,7 @@ const remove = async (req, res) => {
       redis.del('cache:media:events'),
       redis.del(`cache:media:event:${eventRows[0].slug}`),
       redis.del('cache:media:gallery'),
+      redis.del('cache:home:whats-new'),
     ]);
     return res.json({ message: 'Deleted successfully' });
   } catch (err) {

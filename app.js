@@ -19,6 +19,7 @@ const dirs = [
   'uploads/events/covers',
   'uploads/events/gallery',
   'uploads/procurements',
+  'uploads/gis',
 ];
 dirs.forEach((dir) => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });

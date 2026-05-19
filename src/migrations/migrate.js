@@ -9,6 +9,8 @@ const MIGRATIONS_DIR = __dirname;
 // Ordered list of migration files to run in sequence
 const migrations = [
   '001_initial_schema.sql',
+  '002_add_file_size_to_procurements.sql',
+  '003_gis_tables.sql',
 ];
 
 async function runMigrations() {

@@ -1,0 +1,2 @@
+ALTER TABLE procurements
+ADD COLUMN IF NOT EXISTS file_size INTEGER;

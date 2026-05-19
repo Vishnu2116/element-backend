@@ -10,6 +10,8 @@ router.use('/',     require('./officials.routes'));
 router.use('/',     require('./projects.routes'));
 router.use('/',     require('./knowledgeHub.routes'));
 router.use('/',     require('./media.routes'));
+router.use('/',     require('./procurements.routes'));
+router.use('/',     require('./gis.routes'));
 
 router.get('/health', (req, res) => res.json({ status: 'ok' }));
 
