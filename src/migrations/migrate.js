@@ -11,6 +11,7 @@ const migrations = [
   "002_add_file_size_to_procurements.sql",
   "003_gis_tables.sql",
   "004_update_social_media.sql",
+  "005_settings.sql",
 ];
 
 async function runMigrations() {
