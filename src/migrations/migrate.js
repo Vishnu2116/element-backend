@@ -12,6 +12,7 @@ const migrations = [
   "003_gis_tables.sql",
   "004_update_social_media.sql",
   "005_settings.sql",
+  "006_rti.sql",
 ];
 
 async function runMigrations() {

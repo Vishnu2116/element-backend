@@ -13,6 +13,7 @@ router.use("/", require("./media.routes"));
 router.use("/", require("./procurements.routes"));
 router.use("/", require("./gis.routes"));
 router.use("/", require("./settings.routes"));
+router.use("/", require("./rti.routes"));
 
 router.get("/health", (req, res) => res.json({ status: "ok" }));
 
