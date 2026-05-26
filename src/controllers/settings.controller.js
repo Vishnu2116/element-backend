@@ -1,5 +1,6 @@
 const pool  = require('../config/db');
 const redis = require('../config/redis');
+const updateLastUpdated = require('../helpers/updateLastUpdated');
 
 const CACHE_KEY = 'cache:site-settings';
 
@@ -71,6 +72,7 @@ const update = async (req, res) => {
     if (!rows[0]) return res.status(404).json({ error: 'Settings record not found' });
 
     await bustCache();
+    await updateLastUpdated();
     return res.json(rows[0]);
   } catch (err) {
     console.error('settings.update:', err.message);

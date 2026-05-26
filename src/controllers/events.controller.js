@@ -1,15 +1,17 @@
-const fs   = require('fs');
-const path = require('path');
-const { validationResult, body } = require('express-validator');
+const fs = require("fs");
+const path = require("path");
+const { validationResult, body } = require("express-validator");
 
-const pool  = require('../config/db');
-const redis = require('../config/redis');
+const pool = require("../config/db");
+const redis = require("../config/redis");
+const updateLastUpdated = require("../helpers/updateLastUpdated");
 
-const UUID_REGEX    = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const COVERS_DIR    = path.join(process.cwd(), 'uploads', 'events', 'covers');
-const EVENT_GAL_DIR = path.join(process.cwd(), 'uploads', 'events', 'gallery');
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const COVERS_DIR = path.join(process.cwd(), "uploads", "events", "covers");
+const EVENT_GAL_DIR = path.join(process.cwd(), "uploads", "events", "gallery");
 
-fs.mkdirSync(COVERS_DIR,    { recursive: true });
+fs.mkdirSync(COVERS_DIR, { recursive: true });
 fs.mkdirSync(EVENT_GAL_DIR, { recursive: true });
 
 // ── helpers ────────────────────────────────────────────────────
@@ -34,9 +36,9 @@ function removeFile(filePath) {
 function generateSlug(title) {
   return title
     .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
     .trim();
 }
 
@@ -45,8 +47,11 @@ async function ensureUniqueSlug(base, excludeId = null) {
   let n = 2;
   while (true) {
     const { rows } = excludeId
-      ? await pool.query('SELECT id FROM events WHERE slug = $1 AND id != $2', [slug, excludeId])
-      : await pool.query('SELECT id FROM events WHERE slug = $1', [slug]);
+      ? await pool.query("SELECT id FROM events WHERE slug = $1 AND id != $2", [
+          slug,
+          excludeId,
+        ])
+      : await pool.query("SELECT id FROM events WHERE slug = $1", [slug]);
     if (!rows[0]) return slug;
     slug = `${base}-${n++}`;
   }
@@ -54,30 +59,30 @@ async function ensureUniqueSlug(base, excludeId = null) {
 
 function toBool(val, fallback) {
   if (val === undefined || val === null) return fallback;
-  return val === 'true' || val === true;
+  return val === "true" || val === true;
 }
 
 // ── GET /api/media/events (public, cached) ─────────────────────
 const getAll = async (req, res) => {
   try {
-    const cached = await redis.get('cache:media:events');
+    const cached = await redis.get("cache:media:events");
     if (cached) return res.json(JSON.parse(cached));
 
     const { rows } = await pool.query(
-      'SELECT * FROM events WHERE is_active = true ORDER BY event_date DESC'
+      "SELECT * FROM events WHERE is_active = true ORDER BY event_date DESC",
     );
-    await redis.set('cache:media:events', JSON.stringify(rows), { EX: 86400 });
+    await redis.set("cache:media:events", JSON.stringify(rows), { EX: 86400 });
     return res.json(rows);
   } catch (err) {
-    console.error('events.getAll:', err.message);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("events.getAll:", err.message);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 
 // ── GET /api/media/events/:slug (public, cached) ───────────────
 const getBySlug = async (req, res) => {
   const { slug } = req.params;
-  if (!slug) return res.status(400).json({ error: 'Slug is required' });
+  if (!slug) return res.status(400).json({ error: "Slug is required" });
 
   const cacheKey = `cache:media:event:${slug}`;
   try {
@@ -95,15 +100,15 @@ const getBySlug = async (req, res) => {
        LEFT JOIN event_images ei ON e.id = ei.event_id
        WHERE e.slug = $1 AND e.is_active = true
        GROUP BY e.id`,
-      [slug]
+      [slug],
     );
-    if (!rows[0]) return res.status(404).json({ error: 'Event not found' });
+    if (!rows[0]) return res.status(404).json({ error: "Event not found" });
 
     await redis.set(cacheKey, JSON.stringify(rows[0]), { EX: 86400 });
     return res.json(rows[0]);
   } catch (err) {
-    console.error('events.getBySlug:', err.message);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("events.getBySlug:", err.message);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -125,17 +130,25 @@ const create = async (req, res) => {
       `INSERT INTO events (title, slug, description, event_date, cover_image_path, is_active)
        VALUES ($1,$2,$3,$4,$5,$6)
        RETURNING *`,
-      [title.trim(), slug, description || null, event_date, coverPath, toBool(is_active, true)]
+      [
+        title.trim(),
+        slug,
+        description || null,
+        event_date,
+        coverPath,
+        toBool(is_active, true),
+      ],
     );
 
     await Promise.all([
-      redis.del('cache:media:events'),
-      redis.del('cache:home:whats-new'),
+      redis.del("cache:media:events"),
+      redis.del("cache:home:whats-new"),
     ]);
+    await updateLastUpdated();
     return res.status(201).json(rows[0]);
   } catch (err) {
-    console.error('events.create:', err.message);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("events.create:", err.message);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -143,7 +156,7 @@ const create = async (req, res) => {
 const update = async (req, res) => {
   if (!UUID_REGEX.test(req.params.id)) {
     if (req.file) fs.unlink(req.file.path, () => {});
-    return res.status(404).json({ error: 'Not found' });
+    return res.status(404).json({ error: "Not found" });
   }
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -153,12 +166,12 @@ const update = async (req, res) => {
 
   try {
     const { rows: existing } = await pool.query(
-      'SELECT * FROM events WHERE id = $1',
-      [req.params.id]
+      "SELECT * FROM events WHERE id = $1",
+      [req.params.id],
     );
     if (!existing[0]) {
       if (req.file) fs.unlink(req.file.path, () => {});
-      return res.status(404).json({ error: 'Not found' });
+      return res.status(404).json({ error: "Not found" });
     }
 
     const prev = existing[0];
@@ -187,113 +200,128 @@ const update = async (req, res) => {
        WHERE id = $7
        RETURNING *`,
       [
-        title?.trim()       ?? prev.title,
+        title?.trim() ?? prev.title,
         slug,
-        description !== undefined ? (description || null) : prev.description,
-        event_date  !== undefined ? (event_date  || null) : prev.event_date,
+        description !== undefined ? description || null : prev.description,
+        event_date !== undefined ? event_date || null : prev.event_date,
         coverPath,
-        is_active   !== undefined ? toBool(is_active, prev.is_active) : prev.is_active,
+        is_active !== undefined
+          ? toBool(is_active, prev.is_active)
+          : prev.is_active,
         req.params.id,
-      ]
+      ],
     );
 
     await Promise.all([
-      redis.del('cache:media:events'),
+      redis.del("cache:media:events"),
       redis.del(`cache:media:event:${prev.slug}`),
-      prev.slug !== slug ? redis.del(`cache:media:event:${slug}`) : Promise.resolve(),
-      redis.del('cache:home:whats-new'),
+      prev.slug !== slug
+        ? redis.del(`cache:media:event:${slug}`)
+        : Promise.resolve(),
+      redis.del("cache:home:whats-new"),
     ]);
+    await updateLastUpdated();
     return res.json(rows[0]);
   } catch (err) {
-    console.error('events.update:', err.message);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("events.update:", err.message);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 
 // ── DELETE /api/admin/events/:id (admin) ───────────────────────
 const remove = async (req, res) => {
-  if (!UUID_REGEX.test(req.params.id)) return res.status(404).json({ error: 'Not found' });
+  if (!UUID_REGEX.test(req.params.id))
+    return res.status(404).json({ error: "Not found" });
 
   try {
     const { rows: eventRows } = await pool.query(
-      'SELECT * FROM events WHERE id = $1',
-      [req.params.id]
+      "SELECT * FROM events WHERE id = $1",
+      [req.params.id],
     );
-    if (!eventRows[0]) return res.status(404).json({ error: 'Not found' });
+    if (!eventRows[0]) return res.status(404).json({ error: "Not found" });
 
     const { rows: imageRows } = await pool.query(
-      'SELECT image_path FROM event_images WHERE event_id = $1',
-      [req.params.id]
+      "SELECT image_path FROM event_images WHERE event_id = $1",
+      [req.params.id],
     );
 
     // CASCADE handles DB rows; we handle disk
-    await pool.query('DELETE FROM events WHERE id = $1', [req.params.id]);
+    await pool.query("DELETE FROM events WHERE id = $1", [req.params.id]);
 
     removeFile(eventRows[0].cover_image_path);
     for (const img of imageRows) removeFile(img.image_path);
 
     await Promise.all([
-      redis.del('cache:media:events'),
+      redis.del("cache:media:events"),
       redis.del(`cache:media:event:${eventRows[0].slug}`),
-      redis.del('cache:media:gallery'),
-      redis.del('cache:home:whats-new'),
+      redis.del("cache:media:gallery"),
+      redis.del("cache:home:whats-new"),
     ]);
-    return res.json({ message: 'Deleted successfully' });
+    await updateLastUpdated();
+    return res.json({ message: "Deleted successfully" });
   } catch (err) {
-    console.error('events.remove:', err.message);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("events.remove:", err.message);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 
 // ── POST /api/admin/events/:id/images (admin) ──────────────────
 const addImages = async (req, res) => {
   if (!UUID_REGEX.test(req.params.id)) {
-    if (req.files) req.files.forEach(f => fs.unlink(f.path, () => {}));
-    return res.status(404).json({ error: 'Not found' });
+    if (req.files) req.files.forEach((f) => fs.unlink(f.path, () => {}));
+    return res.status(404).json({ error: "Not found" });
   }
   if (!req.files || req.files.length === 0) {
-    return res.status(422).json({ error: 'No images uploaded' });
+    return res.status(422).json({ error: "No images uploaded" });
   }
 
   try {
     const { rows: eventRows } = await pool.query(
-      'SELECT id, slug FROM events WHERE id = $1',
-      [req.params.id]
+      "SELECT id, slug FROM events WHERE id = $1",
+      [req.params.id],
     );
     if (!eventRows[0]) {
-      req.files.forEach(f => fs.unlink(f.path, () => {}));
-      return res.status(404).json({ error: 'Event not found' });
+      req.files.forEach((f) => fs.unlink(f.path, () => {}));
+      return res.status(404).json({ error: "Event not found" });
     }
 
     const { rows: maxRows } = await pool.query(
-      'SELECT COALESCE(MAX(display_order), -1) AS max_order FROM event_images WHERE event_id = $1',
-      [req.params.id]
+      "SELECT COALESCE(MAX(display_order), -1) AS max_order FROM event_images WHERE event_id = $1",
+      [req.params.id],
     );
-    const baseOrder  = maxRows[0].max_order + 1;
-    const imagePaths = req.files.map(f => moveToEventGallery(f));
+    const baseOrder = maxRows[0].max_order + 1;
+    const imagePaths = req.files.map((f) => moveToEventGallery(f));
 
-    const values = imagePaths.map((_, i) => `($1, $${i + 2}, $${imagePaths.length + i + 2})`).join(', ');
-    const params = [req.params.id, ...imagePaths, ...imagePaths.map((_, i) => baseOrder + i)];
+    const values = imagePaths
+      .map((_, i) => `($1, $${i + 2}, $${imagePaths.length + i + 2})`)
+      .join(", ");
+    const params = [
+      req.params.id,
+      ...imagePaths,
+      ...imagePaths.map((_, i) => baseOrder + i),
+    ];
 
     const { rows } = await pool.query(
       `INSERT INTO event_images (event_id, image_path, display_order) VALUES ${values} RETURNING *`,
-      params
+      params,
     );
 
     await Promise.all([
       redis.del(`cache:media:event:${eventRows[0].slug}`),
-      redis.del('cache:media:gallery'),
+      redis.del("cache:media:gallery"),
     ]);
+    await updateLastUpdated();
     return res.status(201).json(rows);
   } catch (err) {
-    console.error('events.addImages:', err.message);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("events.addImages:", err.message);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 
 // ── DELETE /api/admin/events/images/:id (admin) ────────────────
 const removeImage = async (req, res) => {
-  if (!UUID_REGEX.test(req.params.id)) return res.status(404).json({ error: 'Not found' });
+  if (!UUID_REGEX.test(req.params.id))
+    return res.status(404).json({ error: "Not found" });
 
   try {
     const { rows } = await pool.query(
@@ -301,27 +329,29 @@ const removeImage = async (req, res) => {
        FROM event_images ei
        JOIN events e ON ei.event_id = e.id
        WHERE ei.id = $1`,
-      [req.params.id]
+      [req.params.id],
     );
-    if (!rows[0]) return res.status(404).json({ error: 'Image not found' });
+    if (!rows[0]) return res.status(404).json({ error: "Image not found" });
 
-    await pool.query('DELETE FROM event_images WHERE id = $1', [req.params.id]);
+    await pool.query("DELETE FROM event_images WHERE id = $1", [req.params.id]);
     removeFile(rows[0].image_path);
 
     const cacheOps = [redis.del(`cache:media:event:${rows[0].slug}`)];
-    if (rows[0].show_in_gallery) cacheOps.push(redis.del('cache:media:gallery'));
+    if (rows[0].show_in_gallery)
+      cacheOps.push(redis.del("cache:media:gallery"));
     await Promise.all(cacheOps);
-
-    return res.json({ message: 'Deleted successfully' });
+    await updateLastUpdated();
+    return res.json({ message: "Deleted successfully" });
   } catch (err) {
-    console.error('events.removeImage:', err.message);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("events.removeImage:", err.message);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 
 // ── PUT /api/admin/events/images/:id/toggle-gallery (admin) ────
 const toggleGallery = async (req, res) => {
-  if (!UUID_REGEX.test(req.params.id)) return res.status(404).json({ error: 'Not found' });
+  if (!UUID_REGEX.test(req.params.id))
+    return res.status(404).json({ error: "Not found" });
 
   try {
     const { rows } = await pool.query(
@@ -334,33 +364,45 @@ const toggleGallery = async (req, res) => {
        SELECT u.*, e.slug
        FROM updated u
        JOIN events e ON u.event_id = e.id`,
-      [req.params.id]
+      [req.params.id],
     );
-    if (!rows[0]) return res.status(404).json({ error: 'Image not found' });
+    if (!rows[0]) return res.status(404).json({ error: "Image not found" });
 
     await Promise.all([
       redis.del(`cache:media:event:${rows[0].slug}`),
-      redis.del('cache:media:gallery'),
+      redis.del("cache:media:gallery"),
     ]);
 
     const { slug, ...imageRecord } = rows[0];
+    await updateLastUpdated();
     return res.json(imageRecord);
   } catch (err) {
-    console.error('events.toggleGallery:', err.message);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("events.toggleGallery:", err.message);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 
 const createValidators = [
-  body('title').trim().notEmpty().withMessage('Title is required'),
-  body('event_date').notEmpty().withMessage('Event date is required').isDate().withMessage('Invalid date'),
+  body("title").trim().notEmpty().withMessage("Title is required"),
+  body("event_date")
+    .notEmpty()
+    .withMessage("Event date is required")
+    .isDate()
+    .withMessage("Invalid date"),
 ];
 const updateValidators = [
-  body('title').trim().notEmpty().withMessage('Title is required'),
+  body("title").trim().notEmpty().withMessage("Title is required"),
 ];
 
 module.exports = {
-  getAll, getBySlug, create, update, remove,
-  addImages, removeImage, toggleGallery,
-  createValidators, updateValidators,
+  getAll,
+  getBySlug,
+  create,
+  update,
+  remove,
+  addImages,
+  removeImage,
+  toggleGallery,
+  createValidators,
+  updateValidators,
 };

@@ -1,12 +1,13 @@
-const fs   = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
+const pool = require("../config/db");
+const redis = require("../config/redis");
+const updateLastUpdated = require("../helpers/updateLastUpdated");
 
-const pool  = require('../config/db');
-const redis = require('../config/redis');
-
-const UUID_REGEX  = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const CACHE_KEY   = 'cache:media:gallery';
-const GALLERY_DIR = path.join(process.cwd(), 'uploads', 'gallery');
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const CACHE_KEY = "cache:media:gallery";
+const GALLERY_DIR = path.join(process.cwd(), "uploads", "gallery");
 
 fs.mkdirSync(GALLERY_DIR, { recursive: true });
 
@@ -21,12 +22,10 @@ function removeFile(filePath) {
   fs.unlink(path.join(process.cwd(), filePath), () => {});
 }
 
-// ── GET /api/media/gallery (public, cached) ────────────────────
 const getAll = async (req, res) => {
   try {
     const cached = await redis.get(CACHE_KEY);
     if (cached) return res.json(JSON.parse(cached));
-
     const { rows } = await pool.query(`
       SELECT id, image_path, caption, display_order, created_at,
              NULL::uuid AS event_id,
@@ -43,61 +42,57 @@ const getAll = async (req, res) => {
         AND e.is_active = true
       ORDER BY created_at DESC
     `);
-
     await redis.set(CACHE_KEY, JSON.stringify(rows), { EX: 86400 });
     return res.json(rows);
   } catch (err) {
-    console.error('gallery.getAll:', err.message);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("gallery.getAll:", err.message);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 
-// ── POST /api/admin/gallery (admin) ────────────────────────────
 const create = async (req, res) => {
   if (!req.files || req.files.length === 0) {
-    return res.status(422).json({ error: 'No images uploaded' });
+    return res.status(422).json({ error: "No images uploaded" });
   }
-
   try {
     const { rows: maxRows } = await pool.query(
-      'SELECT COALESCE(MAX(display_order), -1) AS max_order FROM gallery_images'
+      "SELECT COALESCE(MAX(display_order), -1) AS max_order FROM gallery_images",
     );
     const baseOrder = maxRows[0].max_order + 1;
-
-    const imagePaths = req.files.map(f => moveToGallery(f));
-    const values = imagePaths.map((_, i) => `($${i + 1}, $${imagePaths.length + i + 1})`).join(', ');
+    const imagePaths = req.files.map((f) => moveToGallery(f));
+    const values = imagePaths
+      .map((_, i) => `($${i + 1}, $${imagePaths.length + i + 1})`)
+      .join(", ");
     const params = [...imagePaths, ...imagePaths.map((_, i) => baseOrder + i)];
-
     const { rows } = await pool.query(
       `INSERT INTO gallery_images (image_path, display_order) VALUES ${values} RETURNING *`,
-      params
+      params,
     );
-
     await redis.del(CACHE_KEY);
+    await updateLastUpdated();
     return res.status(201).json(rows);
   } catch (err) {
-    console.error('gallery.create:', err.message);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("gallery.create:", err.message);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 
-// ── DELETE /api/admin/gallery/:id (admin) ──────────────────────
 const remove = async (req, res) => {
-  if (!UUID_REGEX.test(req.params.id)) return res.status(404).json({ error: 'Not found' });
-
+  if (!UUID_REGEX.test(req.params.id))
+    return res.status(404).json({ error: "Not found" });
   try {
     const { rows } = await pool.query(
-      'DELETE FROM gallery_images WHERE id = $1 RETURNING *',
-      [req.params.id]
+      "DELETE FROM gallery_images WHERE id = $1 RETURNING *",
+      [req.params.id],
     );
-    if (!rows[0]) return res.status(404).json({ error: 'Not found' });
-
+    if (!rows[0]) return res.status(404).json({ error: "Not found" });
     removeFile(rows[0].image_path);
     await redis.del(CACHE_KEY);
-    return res.json({ message: 'Deleted successfully' });
+    await updateLastUpdated();
+    return res.json({ message: "Deleted successfully" });
   } catch (err) {
-    console.error('gallery.remove:', err.message);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("gallery.remove:", err.message);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 

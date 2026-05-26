@@ -1,14 +1,16 @@
-const fs = require('fs');
-const path = require('path');
-const { validationResult } = require('express-validator');
+const fs = require("fs");
+const path = require("path");
+const { validationResult } = require("express-validator");
 
-const pool  = require('../config/db');
-const redis = require('../config/redis');
+const pool = require("../config/db");
+const redis = require("../config/redis");
+const updateLastUpdated = require("../helpers/updateLastUpdated");
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const CACHE_KEY = 'cache:hero-slides';
-const HERO_DIR  = path.join(process.cwd(), 'uploads', 'hero');
+const CACHE_KEY = "cache:hero-slides";
+const HERO_DIR = path.join(process.cwd(), "uploads", "hero");
 
 fs.mkdirSync(HERO_DIR, { recursive: true });
 
@@ -34,29 +36,30 @@ const getAll = async (req, res) => {
     if (cached) return res.json(JSON.parse(cached));
 
     const { rows } = await pool.query(
-      'SELECT * FROM hero_slides WHERE is_active = true ORDER BY display_order ASC'
+      "SELECT * FROM hero_slides WHERE is_active = true ORDER BY display_order ASC",
     );
     await redis.set(CACHE_KEY, JSON.stringify(rows), { EX: 86400 });
     return res.json(rows);
   } catch (err) {
-    console.error('heroSlides.getAll:', err.message);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("heroSlides.getAll:", err.message);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 
 // ── GET /api/admin/hero-slides/:id ─────────────────────────────
 const getById = async (req, res) => {
-  if (!UUID_REGEX.test(req.params.id)) return res.status(404).json({ error: 'Not found' });
+  if (!UUID_REGEX.test(req.params.id))
+    return res.status(404).json({ error: "Not found" });
   try {
     const { rows } = await pool.query(
-      'SELECT * FROM hero_slides WHERE id = $1',
-      [req.params.id]
+      "SELECT * FROM hero_slides WHERE id = $1",
+      [req.params.id],
     );
-    if (!rows[0]) return res.status(404).json({ error: 'Not found' });
+    if (!rows[0]) return res.status(404).json({ error: "Not found" });
     return res.json(rows[0]);
   } catch (err) {
-    console.error('heroSlides.getById:', err.message);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("heroSlides.getById:", err.message);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -72,36 +75,45 @@ const create = async (req, res) => {
 
   try {
     const {
-      title, subtitle, badge_text,
-      cta1_label, cta1_link, cta2_label, cta2_link,
-      display_order, is_active,
+      title,
+      subtitle,
+      badge_text,
+      cta1_label,
+      cta1_link,
+      cta2_label,
+      cta2_link,
+      display_order,
+      is_active,
     } = req.body;
 
     const { rows } = await pool.query(
       `INSERT INTO hero_slides
-         (title, subtitle, badge_text, cta1_label, cta1_link,
-          cta2_label, cta2_link, image_path, display_order, is_active)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-       RETURNING *`,
+           (title, subtitle, badge_text, cta1_label, cta1_link,
+            cta2_label, cta2_link, image_path, display_order, is_active)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+         RETURNING *`,
       [
         title,
-        subtitle    || null,
-        badge_text  || null,
-        cta1_label  || null,
-        cta1_link   || null,
-        cta2_label  || null,
-        cta2_link   || null,
+        subtitle || null,
+        badge_text || null,
+        cta1_label || null,
+        cta1_link || null,
+        cta2_label || null,
+        cta2_link || null,
         imagePath,
         display_order != null ? parseInt(display_order, 10) : 0,
-        is_active !== undefined ? is_active === 'true' || is_active === true : true,
-      ]
+        is_active !== undefined
+          ? is_active === "true" || is_active === true
+          : true,
+      ],
     );
 
     await bustCache();
+    await updateLastUpdated();
     return res.status(201).json(rows[0]);
   } catch (err) {
-    console.error('heroSlides.create:', err.message);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("heroSlides.create:", err.message);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -109,7 +121,7 @@ const create = async (req, res) => {
 const update = async (req, res) => {
   if (!UUID_REGEX.test(req.params.id)) {
     if (req.file) fs.unlink(req.file.path, () => {});
-    return res.status(404).json({ error: 'Not found' });
+    return res.status(404).json({ error: "Not found" });
   }
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -119,12 +131,12 @@ const update = async (req, res) => {
 
   try {
     const { rows: existing } = await pool.query(
-      'SELECT * FROM hero_slides WHERE id = $1',
-      [req.params.id]
+      "SELECT * FROM hero_slides WHERE id = $1",
+      [req.params.id],
     );
     if (!existing[0]) {
       if (req.file) fs.unlink(req.file.path, () => {});
-      return res.status(404).json({ error: 'Not found' });
+      return res.status(404).json({ error: "Not found" });
     }
 
     const prev = existing[0];
@@ -135,60 +147,71 @@ const update = async (req, res) => {
     }
 
     const {
-      title, subtitle, badge_text,
-      cta1_label, cta1_link, cta2_label, cta2_link,
-      display_order, is_active,
+      title,
+      subtitle,
+      badge_text,
+      cta1_label,
+      cta1_link,
+      cta2_label,
+      cta2_link,
+      display_order,
+      is_active,
     } = req.body;
 
     const { rows } = await pool.query(
       `UPDATE hero_slides SET
-         title=$1, subtitle=$2, badge_text=$3,
-         cta1_label=$4, cta1_link=$5, cta2_label=$6, cta2_link=$7,
-         image_path=$8, display_order=$9, is_active=$10,
-         updated_at=NOW()
-       WHERE id=$11
-       RETURNING *`,
+           title=$1, subtitle=$2, badge_text=$3,
+           cta1_label=$4, cta1_link=$5, cta2_label=$6, cta2_link=$7,
+           image_path=$8, display_order=$9, is_active=$10,
+           updated_at=NOW()
+         WHERE id=$11
+         RETURNING *`,
       [
         title,
-        subtitle    ?? prev.subtitle,
-        badge_text  ?? prev.badge_text,
-        cta1_label  ?? prev.cta1_label,
-        cta1_link   ?? prev.cta1_link,
-        cta2_label  ?? prev.cta2_label,
-        cta2_link   ?? prev.cta2_link,
+        subtitle ?? prev.subtitle,
+        badge_text ?? prev.badge_text,
+        cta1_label ?? prev.cta1_label,
+        cta1_link ?? prev.cta1_link,
+        cta2_label ?? prev.cta2_label,
+        cta2_link ?? prev.cta2_link,
         imagePath,
-        display_order != null ? parseInt(display_order, 10) : prev.display_order,
+        display_order != null
+          ? parseInt(display_order, 10)
+          : prev.display_order,
         is_active !== undefined
-          ? is_active === 'true' || is_active === true
+          ? is_active === "true" || is_active === true
           : prev.is_active,
         req.params.id,
-      ]
+      ],
     );
 
     await bustCache();
+    await updateLastUpdated();
     return res.json(rows[0]);
   } catch (err) {
-    console.error('heroSlides.update:', err.message);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("heroSlides.update:", err.message);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 
 // ── DELETE /api/admin/hero-slides/:id ──────────────────────────
 const remove = async (req, res) => {
-  if (!UUID_REGEX.test(req.params.id)) return res.status(404).json({ error: 'Not found' });
+  if (!UUID_REGEX.test(req.params.id))
+    return res.status(404).json({ error: "Not found" });
   try {
     const { rows } = await pool.query(
-      'DELETE FROM hero_slides WHERE id = $1 RETURNING *',
-      [req.params.id]
+      "DELETE FROM hero_slides WHERE id = $1 RETURNING *",
+      [req.params.id],
     );
-    if (!rows[0]) return res.status(404).json({ error: 'Not found' });
+    if (!rows[0]) return res.status(404).json({ error: "Not found" });
 
     removeFile(rows[0].image_path);
     await bustCache();
-    return res.json({ message: 'Deleted successfully' });
+    await updateLastUpdated();
+    return res.json({ message: "Deleted successfully" });
   } catch (err) {
-    console.error('heroSlides.remove:', err.message);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("heroSlides.remove:", err.message);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -196,25 +219,30 @@ const remove = async (req, res) => {
 const reorder = async (req, res) => {
   const { items } = req.body;
   if (!Array.isArray(items) || items.length === 0) {
-    return res.status(422).json({ error: 'items must be a non-empty array of { id, display_order }' });
+    return res
+      .status(422)
+      .json({
+        error: "items must be a non-empty array of { id, display_order }",
+      });
   }
 
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
     for (const { id, display_order } of items) {
       await client.query(
-        'UPDATE hero_slides SET display_order=$1, updated_at=NOW() WHERE id=$2',
-        [display_order, id]
+        "UPDATE hero_slides SET display_order=$1, updated_at=NOW() WHERE id=$2",
+        [display_order, id],
       );
     }
-    await client.query('COMMIT');
+    await client.query("COMMIT");
     await bustCache();
-    return res.json({ message: 'Reordered successfully' });
+    await updateLastUpdated();
+    return res.json({ message: "Reordered successfully" });
   } catch (err) {
-    await client.query('ROLLBACK');
-    console.error('heroSlides.reorder:', err.message);
-    return res.status(500).json({ error: 'Internal server error' });
+    await client.query("ROLLBACK");
+    console.error("heroSlides.reorder:", err.message);
+    return res.status(500).json({ error: "Internal server error" });
   } finally {
     client.release();
   }

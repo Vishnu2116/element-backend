@@ -4,6 +4,7 @@ const { body, validationResult } = require('express-validator');
 
 const pool  = require('../config/db');
 const redis = require('../config/redis');
+const updateLastUpdated = require('../helpers/updateLastUpdated');
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -98,6 +99,7 @@ const createOfficer = async (req, res) => {
     );
 
     await bustCache();
+    await updateLastUpdated();
     return res.status(201).json(rows[0]);
   } catch (err) {
     console.error('rti.createOfficer:', err.message);
@@ -150,6 +152,7 @@ const updateOfficer = async (req, res) => {
     );
 
     await bustCache();
+    await updateLastUpdated();
     return res.json(rows[0]);
   } catch (err) {
     console.error('rti.updateOfficer:', err.message);
@@ -169,6 +172,7 @@ const deleteOfficer = async (req, res) => {
     if (!rows[0]) return res.status(404).json({ error: 'Not found' });
 
     await bustCache();
+    await updateLastUpdated();
     return res.json({ message: 'Deleted successfully' });
   } catch (err) {
     console.error('rti.deleteOfficer:', err.message);
@@ -206,6 +210,7 @@ const createDocument = async (req, res) => {
     );
 
     await bustCache();
+    await updateLastUpdated();
     return res.status(201).json(rows[0]);
   } catch (err) {
     console.error('rti.createDocument:', err.message);
@@ -273,6 +278,7 @@ const updateDocument = async (req, res) => {
     );
 
     await bustCache();
+    await updateLastUpdated();
     return res.json(rows[0]);
   } catch (err) {
     console.error('rti.updateDocument:', err.message);
@@ -293,6 +299,7 @@ const deleteDocument = async (req, res) => {
 
     removeFile(rows[0].file_path);
     await bustCache();
+    await updateLastUpdated();
     return res.json({ message: 'Deleted successfully' });
   } catch (err) {
     console.error('rti.deleteDocument:', err.message);
