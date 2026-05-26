@@ -26,6 +26,7 @@ dirs.forEach((dir) => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 
+const cookieParser = require("cookie-parser");
 const { globalLimiter } = require("./src/middleware/rateLimiter");
 const routes = require("./src/routes/index");
 
@@ -51,6 +52,7 @@ app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
 app.use(globalLimiter);
 
+app.use(cookieParser());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
