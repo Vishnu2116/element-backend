@@ -4,7 +4,7 @@ const isDev = process.env.NODE_ENV !== "production";
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: isDev ? 1000 : 200,
+  max: isDev ? 1000 : 500,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many requests, please try again later." },
@@ -12,7 +12,7 @@ const globalLimiter = rateLimit({
 
 const strictLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: isDev ? 100 : 10,
+  max: isDev ? 100 : 100,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
