@@ -226,6 +226,12 @@ const reorder = async (req, res) => {
       });
   }
 
+  for (const { id } of items) {
+    if (!UUID_REGEX.test(id)) {
+      return res.status(422).json({ error: `Invalid UUID: ${id}` });
+    }
+  }
+
   const client = await pool.connect();
   try {
     await client.query("BEGIN");

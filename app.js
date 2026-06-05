@@ -1,5 +1,10 @@
 require("dotenv").config();
 
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.trim() === '') {
+  console.error('FATAL: JWT_SECRET is not set in .env');
+  process.exit(1);
+}
+
 const fs = require("fs");
 const path = require("path");
 const express = require("express");
@@ -47,7 +52,18 @@ app.use(
     },
   }),
 );
-app.use(cors({ origin: process.env.FRONTEND_URL }));
+const allowedOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(',').map(o => o.trim())
+  : [];
+
+if (allowedOrigins.length === 0) {
+  console.warn('WARNING: FRONTEND_URL not set — CORS is open to all origins');
+}
+
+app.use(cors({
+  origin: allowedOrigins.length > 0 ? allowedOrigins : '*',
+  credentials: true,
+}));
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
 app.use(globalLimiter);
@@ -66,7 +82,8 @@ app.use((req, res) => res.status(404).json({ error: "Route not found" }));
 app.use((err, req, res, next) => {
   console.error(err.stack);
   const status = err.status || 500;
-  res.status(status).json({ error: err.message || "Internal server error" });
+  const message = status < 500 ? err.message : 'Internal server error';
+  res.status(status).json({ error: message });
 });
 
 const PORT = process.env.PORT || 3000;

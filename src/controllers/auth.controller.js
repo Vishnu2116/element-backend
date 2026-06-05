@@ -27,7 +27,8 @@ const login = async (req, res) => {
 
     const payload = { id: admin.id, email: admin.email, name: admin.name };
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES_IN || '2h',
+      expiresIn: process.env.JWT_EXPIRES_IN || '8h',
+      algorithm: 'HS256',
     });
 
     return res.json({ token, admin: payload });

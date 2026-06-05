@@ -292,13 +292,16 @@ const addKml = async (req, res) => {
     const displayOrder = maxRows[0].max_order + 1;
     const filePath = moveToGis(req.file);
     const fileSizeKB = Math.round(req.file.size / 1024);
+    const safeName = req.file.originalname
+      .replace(/[^a-zA-Z0-9._\- ]/g, '')
+      .trim() || 'kml-file.kml';
     const { rows } = await pool.query(
       `INSERT INTO gis_kml_files (site_id, file_name, file_path, file_size, display_order)
        VALUES ($1,$2,$3,$4,$5)
        RETURNING *`,
       [
         req.params.id,
-        req.file.originalname,
+        safeName,
         filePath,
         fileSizeKB,
         displayOrder,

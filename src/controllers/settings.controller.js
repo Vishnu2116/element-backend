@@ -1,3 +1,4 @@
+const { validationResult } = require('express-validator');
 const pool  = require('../config/db');
 const redis = require('../config/redis');
 const updateLastUpdated = require('../helpers/updateLastUpdated');
@@ -41,6 +42,9 @@ const getAdmin = async (req, res) => {
 
 // ── PUT /api/admin/settings (admin) ───────────────────────────
 const update = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(422).json({ errors: errors.array() });
+
   const {
     website_title,
     office_address,

@@ -8,13 +8,13 @@ const {
 } = require('../controllers/gis.controller');
 
 const auth = require('../middleware/auth');
-const { globalLimiter } = require('../middleware/rateLimiter');
+const { globalLimiter, mapKeyLimiter } = require('../middleware/rateLimiter');
 const { uploadKml } = require('../middleware/upload');
 
 const router = Router();
 
 // ── Public ─────────────────────────────────────────────────────
-router.get('/gis/map-key',   globalLimiter, getMapKey);
+router.get('/gis/map-key', mapKeyLimiter, getMapKey);
 router.get('/gis/years',     globalLimiter, getYears);
 router.get('/gis/districts', globalLimiter, getDistricts);
 router.get('/gis/sites',     globalLimiter, getSites);
