@@ -51,9 +51,9 @@ const combinedFilter = (req, file, cb) => {
   cb(makeError('Invalid file type. Allowed: jpeg, jpg, png, webp, pdf'));
 };
 
-const imageUpload = multer({ storage, fileFilter: imageFilter,   limits: { fileSize: 5  * 1024 * 1024 } });
+const imageUpload = multer({ storage, fileFilter: imageFilter,   limits: { fileSize: 10 * 1024 * 1024 } });
 const pdfUpload   = multer({ storage, fileFilter: pdfFilter,     limits: { fileSize: 20 * 1024 * 1024 } });
-const combined    = multer({ storage, fileFilter: combinedFilter, limits: { fileSize: 20 * 1024 * 1024 } });
+const combined    = multer({ storage, fileFilter: combinedFilter, limits: { fileSize: 10 * 1024 * 1024 } });
 const kmlUpload   = multer({ storage, fileFilter: kmlFilter,     limits: { fileSize: 10 * 1024 * 1024 } });
 
 function wrap(instance, method) {
@@ -67,7 +67,7 @@ function wrap(instance, method) {
 
 const uploadSingle   = wrap(combined,    'single');   // (fieldName)
 const uploadMultiple = wrap(combined,    'array');    // (fieldName, maxCount)
-const uploadImage    = wrap(imageUpload, 'single');   // (fieldName) — images only, 5 MB
+const uploadImage    = wrap(imageUpload, 'single');   // (fieldName) — images only, 10 MB
 const uploadPdf      = wrap(pdfUpload,   'single');   // (fieldName) — PDF only, 20 MB
 const uploadKml      = wrap(kmlUpload,   'single');   // (fieldName) — KML only, 10 MB
 

@@ -4,7 +4,7 @@ const isDev = process.env.NODE_ENV !== "production";
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: isDev ? 1000 : 500,
+  max: isDev ? 10000 : 5000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many requests, please try again later." },
@@ -12,17 +12,17 @@ const globalLimiter = rateLimit({
 
 const strictLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: isDev ? 100 : 100,
+  max: isDev ? 100 : 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    error: "Too many requests on this endpoint, please try again later.",
+    error: "Too many login attempts. Please try again after 15 minutes.",
   },
 });
 
 const mapKeyLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: isDev ? 1000 : 20,
+  max: isDev ? 1000 : 100,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many requests, please try again later." },

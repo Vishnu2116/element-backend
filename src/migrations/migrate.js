@@ -18,6 +18,7 @@ const migrations = [
   "006_rti.sql",
   "007_last_updated.sql",
   "008_visitor_stats.sql",
+  "009_project_component_objectives.sql",
 ];
 
 async function runMigrations() {

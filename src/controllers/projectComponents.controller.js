@@ -28,6 +28,7 @@ function componentFields(body) {
     stat4_value,
     display_order,
     is_active,
+    objectives,
   } = body;
   return [
     parseInt(component_number, 10),
@@ -43,6 +44,7 @@ function componentFields(body) {
     stat3_value || null,
     stat4_label || null,
     stat4_value || null,
+    objectives || null,
     display_order != null ? parseInt(display_order, 10) : 0,
     toBool(is_active, true),
   ];
@@ -101,8 +103,8 @@ const create = async (req, res) => {
          (component_number, label, name, description, icon_name,
           stat1_label, stat1_value, stat2_label, stat2_value,
           stat3_label, stat3_value, stat4_label, stat4_value,
-          display_order, is_active)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+          objectives, display_order, is_active)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
        RETURNING *`,
       componentFields(req.body),
     );
@@ -127,8 +129,8 @@ const update = async (req, res) => {
          component_number=$1, label=$2, name=$3, description=$4, icon_name=$5,
          stat1_label=$6, stat1_value=$7, stat2_label=$8, stat2_value=$9,
          stat3_label=$10, stat3_value=$11, stat4_label=$12, stat4_value=$13,
-         display_order=$14, is_active=$15, updated_at=NOW()
-       WHERE id=$16
+         objectives=$14, display_order=$15, is_active=$16, updated_at=NOW()
+       WHERE id=$17
        RETURNING *`,
       [...componentFields(req.body), req.params.id],
     );
