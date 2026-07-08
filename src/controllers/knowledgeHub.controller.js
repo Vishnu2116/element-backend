@@ -174,25 +174,29 @@ const getWhatsNew = async (req, res) => {
     if (cached) return res.json(JSON.parse(cached));
     const { rows } = await pool.query(
       `SELECT id, title, 'knowledge_hub' AS source,
-              type AS item_type, file_path, created_at
+              type AS item_type, file_path, created_at,
+              NULL AS slug
        FROM knowledge_hub_documents
        WHERE is_active = true
          AND created_at >= NOW() - INTERVAL '30 days'
        UNION ALL
        SELECT id, title, 'event' AS source,
-              'event' AS item_type, NULL AS file_path, created_at
+              'event' AS item_type, NULL AS file_path,
+              created_at, slug
        FROM events
        WHERE is_active = true
          AND created_at >= NOW() - INTERVAL '30 days'
        UNION ALL
        SELECT id, title, 'procurement' AS source,
-              type AS item_type, file_path, created_at
+              type AS item_type, file_path, created_at,
+              NULL AS slug
        FROM procurements
        WHERE is_active = true
          AND created_at >= NOW() - INTERVAL '30 days'
        UNION ALL
        SELECT id, title, 'project' AS source,
-              'project' AS item_type, NULL AS file_path, created_at
+              'project' AS item_type, NULL AS file_path,
+              created_at, slug
        FROM projects
        WHERE is_active = true
          AND created_at >= NOW() - INTERVAL '30 days'
