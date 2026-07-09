@@ -19,6 +19,9 @@ const migrations = [
   "007_last_updated.sql",
   "008_visitor_stats.sql",
   "009_project_component_objectives.sql",
+  "010_gallery_district.sql",
+  "011_simplify_projects.sql",
+  "012_activity_projects.sql",
 ];
 
 async function runMigrations() {

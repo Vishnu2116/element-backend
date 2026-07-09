@@ -1,7 +1,7 @@
 const { Router } = require('express');
 
 const {
-  getAll: getGallery, create: createGallery, remove: removeGallery,
+  getDistricts, getByDistrict, create: createGallery, remove: removeGallery,
 } = require('../controllers/gallery.controller');
 
 const {
@@ -23,7 +23,8 @@ const { uploadImage, uploadMultiple } = require('../middleware/upload');
 const router = Router();
 
 // ── Public ─────────────────────────────────────────────────────
-router.get('/media/gallery',        globalLimiter, getGallery);
+router.get('/media/gallery/districts', globalLimiter, getDistricts);
+router.get('/media/gallery/:district', globalLimiter, getByDistrict);
 router.get('/media/social',         globalLimiter, getSocial);
 router.get('/media/events',         globalLimiter, getEvents);
 router.get('/media/events/:slug',   globalLimiter, getBySlug);
@@ -34,7 +35,7 @@ router.delete('/admin/gallery/:id', auth, removeGallery);
 
 // ── Admin: events — specific sub-routes BEFORE /:id routes ─────
 // images sub-routes (depth > /:id, no conflict, but explicit ordering is clearer)
-router.put   ('/admin/events/images/:id/toggle-gallery', auth, toggleGallery);
+// router.put   ('/admin/events/images/:id/toggle-gallery', auth, toggleGallery);
 router.delete('/admin/events/images/:id',                auth, removeImage);
 
 router.post  ('/admin/events',          auth, uploadImage('cover'), createValidators, createEvent);

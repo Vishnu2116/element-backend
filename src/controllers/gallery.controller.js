@@ -6,7 +6,8 @@ const updateLastUpdated = require("../helpers/updateLastUpdated");
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const CACHE_KEY = "cache:media:gallery";
+const DISTRICTS_CACHE_KEY = "cache:gallery:districts";
+const DISTRICT_CACHE_PREFIX = "cache:gallery:district:";
 const GALLERY_DIR = path.join(process.cwd(), "uploads", "gallery");
 
 fs.mkdirSync(GALLERY_DIR, { recursive: true });
@@ -22,30 +23,43 @@ function removeFile(filePath) {
   fs.unlink(path.join(process.cwd(), filePath), () => {});
 }
 
-const getAll = async (req, res) => {
+const getDistricts = async (req, res) => {
   try {
-    const cached = await redis.get(CACHE_KEY);
+    const cached = await redis.get(DISTRICTS_CACHE_KEY);
     if (cached) return res.json(JSON.parse(cached));
     const { rows } = await pool.query(`
-      SELECT id, image_path, caption, display_order, created_at,
-             NULL::uuid AS event_id,
-             NULL::text AS event_title
+      SELECT district, COUNT(*) as image_count
       FROM gallery_images
       WHERE is_active = true
-      UNION ALL
-      SELECT ei.id, ei.image_path, ei.caption, ei.display_order, ei.created_at,
-             e.id  AS event_id,
-             e.title AS event_title
-      FROM event_images ei
-      JOIN events e ON ei.event_id = e.id
-      WHERE ei.show_in_gallery = true
-        AND e.is_active = true
-      ORDER BY created_at DESC
+      AND district IS NOT NULL
+      GROUP BY district
+      ORDER BY district ASC
     `);
-    await redis.set(CACHE_KEY, JSON.stringify(rows), { EX: 86400 });
+    await redis.set(DISTRICTS_CACHE_KEY, JSON.stringify(rows), { EX: 86400 });
     return res.json(rows);
   } catch (err) {
-    console.error("gallery.getAll:", err.message);
+    console.error("gallery.getDistricts:", err.message);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+const getByDistrict = async (req, res) => {
+  const { district } = req.params;
+  const cacheKey = DISTRICT_CACHE_PREFIX + district;
+  try {
+    const cached = await redis.get(cacheKey);
+    if (cached) return res.json(JSON.parse(cached));
+    const { rows } = await pool.query(
+      `SELECT * FROM gallery_images
+       WHERE is_active = true
+       AND district = $1
+       ORDER BY created_at DESC`,
+      [district],
+    );
+    await redis.set(cacheKey, JSON.stringify(rows), { EX: 86400 });
+    return res.json(rows);
+  } catch (err) {
+    console.error("gallery.getByDistrict:", err.message);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -55,20 +69,31 @@ const create = async (req, res) => {
     return res.status(422).json({ error: "No images uploaded" });
   }
   try {
+    const district = req.body.district || null;
     const { rows: maxRows } = await pool.query(
       "SELECT COALESCE(MAX(display_order), -1) AS max_order FROM gallery_images",
     );
     const baseOrder = maxRows[0].max_order + 1;
     const imagePaths = req.files.map((f) => moveToGallery(f));
     const values = imagePaths
-      .map((_, i) => `($${i + 1}, $${imagePaths.length + i + 1})`)
+      .map(
+        (_, i) =>
+          `($${i + 1}, $${imagePaths.length + i + 1}, $${imagePaths.length * 2 + 1})`,
+      )
       .join(", ");
-    const params = [...imagePaths, ...imagePaths.map((_, i) => baseOrder + i)];
+    const params = [
+      ...imagePaths,
+      ...imagePaths.map((_, i) => baseOrder + i),
+      district,
+    ];
     const { rows } = await pool.query(
-      `INSERT INTO gallery_images (image_path, display_order) VALUES ${values} RETURNING *`,
+      `INSERT INTO gallery_images (image_path, display_order, district) VALUES ${values} RETURNING *`,
       params,
     );
-    await redis.del(CACHE_KEY);
+    await Promise.all([
+      redis.del(DISTRICTS_CACHE_KEY),
+      redis.del(DISTRICT_CACHE_PREFIX + district),
+    ]);
     await updateLastUpdated();
     return res.status(201).json(rows);
   } catch (err) {
@@ -87,7 +112,10 @@ const remove = async (req, res) => {
     );
     if (!rows[0]) return res.status(404).json({ error: "Not found" });
     removeFile(rows[0].image_path);
-    await redis.del(CACHE_KEY);
+    await Promise.all([
+      redis.del(DISTRICTS_CACHE_KEY),
+      redis.del(DISTRICT_CACHE_PREFIX + rows[0].district),
+    ]);
     await updateLastUpdated();
     return res.json({ message: "Deleted successfully" });
   } catch (err) {
@@ -96,4 +124,4 @@ const remove = async (req, res) => {
   }
 };
 
-module.exports = { getAll, create, remove };
+module.exports = { getDistricts, getByDistrict, create, remove };

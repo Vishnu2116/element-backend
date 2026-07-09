@@ -1,0 +1,2 @@
+ALTER TABLE gallery_images
+ADD COLUMN IF NOT EXISTS district VARCHAR(100);

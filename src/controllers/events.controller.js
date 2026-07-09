@@ -349,7 +349,10 @@ const removeImage = async (req, res) => {
 };
 
 // ── PUT /api/admin/events/images/:id/toggle-gallery (admin) ────
+// Disabled: gallery no longer sources from event_images.show_in_gallery.
 const toggleGallery = async (req, res) => {
+  return res.status(404).json({ error: "Not found" });
+  /*
   if (!UUID_REGEX.test(req.params.id))
     return res.status(404).json({ error: "Not found" });
 
@@ -380,6 +383,7 @@ const toggleGallery = async (req, res) => {
     console.error("events.toggleGallery:", err.message);
     return res.status(500).json({ error: "Internal server error" });
   }
+  */
 };
 
 const createValidators = [

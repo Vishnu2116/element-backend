@@ -18,14 +18,16 @@ function componentFields(body) {
     name,
     description,
     icon_name,
-    stat1_label,
-    stat1_value,
-    stat2_label,
-    stat2_value,
-    stat3_label,
-    stat3_value,
-    stat4_label,
-    stat4_value,
+    // Admin form no longer sends these; stat1-4 columns remain in the DB
+    // untouched by create/update so existing values are preserved.
+    // stat1_label,
+    // stat1_value,
+    // stat2_label,
+    // stat2_value,
+    // stat3_label,
+    // stat3_value,
+    // stat4_label,
+    // stat4_value,
     display_order,
     is_active,
     objectives,
@@ -36,14 +38,14 @@ function componentFields(body) {
     name.trim(),
     description || null,
     icon_name || null,
-    stat1_label || null,
-    stat1_value || null,
-    stat2_label || null,
-    stat2_value || null,
-    stat3_label || null,
-    stat3_value || null,
-    stat4_label || null,
-    stat4_value || null,
+    // stat1_label || null,
+    // stat1_value || null,
+    // stat2_label || null,
+    // stat2_value || null,
+    // stat3_label || null,
+    // stat3_value || null,
+    // stat4_label || null,
+    // stat4_value || null,
     objectives || null,
     display_order != null ? parseInt(display_order, 10) : 0,
     toBool(is_active, true),
@@ -78,7 +80,9 @@ const getById = async (req, res) => {
     );
     if (!comps[0]) return res.status(404).json({ error: "Not found" });
     const { rows: projects } = await pool.query(
-      `SELECT id, title, slug, subtitle, status, thumbnail_image_path, display_order
+      `SELECT id, component_id, title, slug, thumbnail_image_path,
+                description, bullet_points, display_order, is_active,
+                created_at, updated_at
        FROM projects
        WHERE component_id = $1 AND is_active = true
        ORDER BY display_order ASC`,
@@ -101,10 +105,8 @@ const create = async (req, res) => {
     const { rows } = await pool.query(
       `INSERT INTO project_components
          (component_number, label, name, description, icon_name,
-          stat1_label, stat1_value, stat2_label, stat2_value,
-          stat3_label, stat3_value, stat4_label, stat4_value,
           objectives, display_order, is_active)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
        RETURNING *`,
       componentFields(req.body),
     );
@@ -127,10 +129,8 @@ const update = async (req, res) => {
     const { rows } = await pool.query(
       `UPDATE project_components SET
          component_number=$1, label=$2, name=$3, description=$4, icon_name=$5,
-         stat1_label=$6, stat1_value=$7, stat2_label=$8, stat2_value=$9,
-         stat3_label=$10, stat3_value=$11, stat4_label=$12, stat4_value=$13,
-         objectives=$14, display_order=$15, is_active=$16, updated_at=NOW()
-       WHERE id=$17
+         objectives=$6, display_order=$7, is_active=$8, updated_at=NOW()
+       WHERE id=$9
        RETURNING *`,
       [...componentFields(req.body), req.params.id],
     );

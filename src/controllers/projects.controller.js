@@ -98,8 +98,9 @@ const getAll = async (req, res) => {
     }
 
     const { rows } = await pool.query(
-      `SELECT id, title, slug, subtitle, status,
-                thumbnail_image_path, component_id, created_at
+      `SELECT id, component_id, title, slug, thumbnail_image_path,
+                description, bullet_points, display_order, is_active,
+                created_at, updated_at
          FROM projects
          WHERE is_active = true
          ORDER BY created_at DESC
@@ -128,7 +129,11 @@ const getBySlug = async (req, res) => {
     if (cached) return res.json(JSON.parse(cached));
 
     const { rows: projectRows } = await pool.query(
-      "SELECT * FROM projects WHERE slug = $1 AND is_active = true",
+      `SELECT id, component_id, title, slug, thumbnail_image_path,
+                description, bullet_points, display_order, is_active,
+                created_at, updated_at
+         FROM projects
+         WHERE slug = $1 AND is_active = true`,
       [slug],
     );
     if (!projectRows[0])
@@ -170,9 +175,9 @@ const getHighlights = async (req, res) => {
     if (cached) return res.json(JSON.parse(cached));
 
     const { rows } = await pool.query(
-      `SELECT p.id, p.title, p.slug, p.subtitle, p.status,
-                p.thumbnail_image_path, p.display_order,
-                p.component_id, p.created_at,
+      `SELECT p.id, p.component_id, p.title, p.slug, p.thumbnail_image_path,
+                p.description, p.bullet_points, p.display_order, p.is_active,
+                p.created_at, p.updated_at,
                 pc.label AS component_label,
                 pc.name  AS component_name
          FROM projects p
@@ -193,7 +198,10 @@ const getHighlights = async (req, res) => {
 const getAllAdmin = async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT p.*, pc.name AS component_name, pc.label AS component_label
+      `SELECT p.id, p.component_id, p.title, p.slug, p.thumbnail_image_path,
+                p.description, p.bullet_points, p.display_order, p.is_active,
+                p.created_at, p.updated_at,
+                pc.name AS component_name, pc.label AS component_label
          FROM projects p
          LEFT JOIN project_components pc ON p.component_id = pc.id
          ORDER BY p.created_at DESC`,
@@ -218,64 +226,39 @@ const create = async (req, res) => {
   try {
     const {
       title,
-      subtitle,
       component_id,
-      status,
-      objective,
-      beneficiaries,
-      timeline_start,
-      timeline_end,
-      coverage,
-      about,
-      community_impact,
-      livelihood_opportunities,
-      landscape_development_benefits,
-      area_covered,
-      households,
-      districts,
+      description,
       display_order,
       is_active,
+      // Removed (dropped in migration 011_simplify_projects.sql):
+      // subtitle, status, objective, beneficiaries, timeline_start,
+      // timeline_end, coverage, about, community_impact,
+      // livelihood_opportunities, landscape_development_benefits,
+      // area_covered, households, districts
     } = req.body;
 
     const baseSlug = generateSlug(title);
     const slug = await ensureUniqueSlug(baseSlug);
-    const keyActivities = safeParseJSON(req.body.key_activities, []);
-    const expectedOutcomes = safeParseJSON(req.body.expected_outcomes, []);
+    const bulletPoints = Array.isArray(req.body.bullet_points)
+      ? req.body.bullet_points
+      : safeParseJSON(req.body.bullet_points, []);
+    // const keyActivities = safeParseJSON(req.body.key_activities, []);
+    // const expectedOutcomes = safeParseJSON(req.body.expected_outcomes, []);
 
     const { rows } = await pool.query(
       `INSERT INTO projects
-           (component_id, title, slug, subtitle, status,
-            thumbnail_image_path, objective, beneficiaries,
-            timeline_start, timeline_end, coverage, about,
-            community_impact, livelihood_opportunities,
-            landscape_development_benefits,
-            key_activities, expected_outcomes,
-            area_covered, households, districts,
-            display_order, is_active)
+           (component_id, title, slug, thumbnail_image_path,
+            description, bullet_points, display_order, is_active)
          VALUES
-           ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
+           ($1,$2,$3,$4,$5,$6,$7,$8)
          RETURNING *`,
       [
         component_id || null,
         title.trim(),
         slug,
-        subtitle || null,
-        status || "ongoing",
         thumbnailPath,
-        objective || null,
-        beneficiaries || null,
-        timeline_start || null,
-        timeline_end || null,
-        coverage || null,
-        about || null,
-        community_impact || null,
-        livelihood_opportunities || null,
-        landscape_development_benefits || null,
-        JSON.stringify(keyActivities),
-        JSON.stringify(expectedOutcomes),
-        area_covered || null,
-        households || null,
-        districts || null,
+        description || null,
+        JSON.stringify(bulletPoints),
         display_order != null ? parseInt(display_order, 10) : 0,
         toBool(is_active, true),
       ],
@@ -322,23 +305,15 @@ const update = async (req, res) => {
 
     const {
       title,
-      subtitle,
       component_id,
-      status,
-      objective,
-      beneficiaries,
-      timeline_start,
-      timeline_end,
-      coverage,
-      about,
-      community_impact,
-      livelihood_opportunities,
-      landscape_development_benefits,
-      area_covered,
-      households,
-      districts,
+      description,
       display_order,
       is_active,
+      // Removed (dropped in migration 011_simplify_projects.sql):
+      // subtitle, status, objective, beneficiaries, timeline_start,
+      // timeline_end, coverage, about, community_impact,
+      // livelihood_opportunities, landscape_development_benefits,
+      // area_covered, households, districts
     } = req.body;
 
     // Regenerate slug only when title changes
@@ -347,61 +322,38 @@ const update = async (req, res) => {
       slug = await ensureUniqueSlug(generateSlug(title), req.params.id);
     }
 
-    const keyActivities =
-      req.body.key_activities !== undefined
-        ? safeParseJSON(req.body.key_activities, [])
-        : prev.key_activities;
-    const expectedOutcomes =
-      req.body.expected_outcomes !== undefined
-        ? safeParseJSON(req.body.expected_outcomes, [])
-        : prev.expected_outcomes;
+    const bulletPoints =
+      req.body.bullet_points !== undefined
+        ? Array.isArray(req.body.bullet_points)
+          ? req.body.bullet_points
+          : safeParseJSON(req.body.bullet_points, [])
+        : prev.bullet_points;
+    // const keyActivities =
+    //   req.body.key_activities !== undefined
+    //     ? safeParseJSON(req.body.key_activities, [])
+    //     : prev.key_activities;
+    // const expectedOutcomes =
+    //   req.body.expected_outcomes !== undefined
+    //     ? safeParseJSON(req.body.expected_outcomes, [])
+    //     : prev.expected_outcomes;
 
     const finalComponentId =
       component_id !== undefined ? component_id || null : prev.component_id;
 
     const { rows } = await pool.query(
       `UPDATE projects SET
-           component_id=$1, title=$2, slug=$3, subtitle=$4, status=$5,
-           thumbnail_image_path=$6, objective=$7, beneficiaries=$8,
-           timeline_start=$9, timeline_end=$10, coverage=$11, about=$12,
-           community_impact=$13, livelihood_opportunities=$14,
-           landscape_development_benefits=$15,
-           key_activities=$16, expected_outcomes=$17,
-           area_covered=$18, households=$19, districts=$20,
-           display_order=$21, is_active=$22, updated_at=NOW()
-         WHERE id=$23
+           component_id=$1, title=$2, slug=$3, thumbnail_image_path=$4,
+           description=$5, bullet_points=$6, display_order=$7,
+           is_active=$8, updated_at=NOW()
+         WHERE id=$9
          RETURNING *`,
       [
         finalComponentId,
         title?.trim() ?? prev.title,
         slug,
-        subtitle !== undefined ? subtitle || null : prev.subtitle,
-        status !== undefined ? status || "ongoing" : prev.status,
         thumbnailPath,
-        objective !== undefined ? objective || null : prev.objective,
-        beneficiaries !== undefined
-          ? beneficiaries || null
-          : prev.beneficiaries,
-        timeline_start !== undefined
-          ? timeline_start || null
-          : prev.timeline_start,
-        timeline_end !== undefined ? timeline_end || null : prev.timeline_end,
-        coverage !== undefined ? coverage || null : prev.coverage,
-        about !== undefined ? about || null : prev.about,
-        community_impact !== undefined
-          ? community_impact || null
-          : prev.community_impact,
-        livelihood_opportunities !== undefined
-          ? livelihood_opportunities || null
-          : prev.livelihood_opportunities,
-        landscape_development_benefits !== undefined
-          ? landscape_development_benefits || null
-          : prev.landscape_development_benefits,
-        JSON.stringify(keyActivities),
-        JSON.stringify(expectedOutcomes),
-        area_covered !== undefined ? area_covered || null : prev.area_covered,
-        households !== undefined ? households || null : prev.households,
-        districts !== undefined ? districts || null : prev.districts,
+        description !== undefined ? description || null : prev.description,
+        JSON.stringify(bulletPoints),
         display_order != null
           ? parseInt(display_order, 10)
           : prev.display_order,
@@ -569,6 +521,29 @@ const titleRequired = body("title")
 const componentRequired = body("component_id")
   .notEmpty()
   .withMessage("Component ID is required");
+const descriptionOptional = body("description")
+  .optional({ nullable: true, checkFalsy: true })
+  .isString()
+  .withMessage("Description must be a string");
+const bulletPointsOptional = body("bullet_points")
+  .optional({ nullable: true, checkFalsy: true })
+  .custom((value) => {
+    let arr = value;
+    if (typeof arr === "string") {
+      try {
+        arr = JSON.parse(arr);
+      } catch {
+        throw new Error("Bullet points must be a valid JSON array");
+      }
+    }
+    if (!Array.isArray(arr)) {
+      throw new Error("Bullet points must be an array");
+    }
+    if (!arr.every((item) => typeof item === "string" && item.trim() !== "")) {
+      throw new Error("Each bullet point must be a non-empty string");
+    }
+    return true;
+  });
 
 module.exports = {
   getAll,
@@ -582,4 +557,6 @@ module.exports = {
   removeGalleryImage,
   titleRequired,
   componentRequired,
+  descriptionOptional,
+  bulletPointsOptional,
 };
