@@ -11,6 +11,11 @@ async function bustCache() {
   await redis.del(CACHE_KEY);
 }
 
+function toBool(val, fallback) {
+  if (val === undefined || val === null) return fallback;
+  return val === "true" || val === true;
+}
+
 const getAll = async (req, res) => {
   try {
     const cached = await redis.get(CACHE_KEY);
@@ -30,13 +35,17 @@ const create = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty())
     return res.status(422).json({ errors: errors.array() });
-  const { name, display_order } = req.body;
+  const { name, display_order, is_district_based } = req.body;
   try {
     const { rows } = await pool.query(
-      `INSERT INTO official_categories (name, display_order)
-       VALUES ($1, $2)
+      `INSERT INTO official_categories (name, display_order, is_district_based)
+       VALUES ($1, $2, $3)
        RETURNING *`,
-      [name.trim(), display_order != null ? parseInt(display_order, 10) : 0],
+      [
+        name.trim(),
+        display_order != null ? parseInt(display_order, 10) : 0,
+        toBool(is_district_based, false),
+      ],
     );
     await bustCache();
     await updateLastUpdated();
@@ -53,16 +62,17 @@ const update = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty())
     return res.status(422).json({ errors: errors.array() });
-  const { name, display_order } = req.body;
+  const { name, display_order, is_district_based } = req.body;
   try {
     const { rows } = await pool.query(
       `UPDATE official_categories
-       SET name = $1, display_order = $2, updated_at = NOW()
-       WHERE id = $3
+       SET name = $1, display_order = $2, is_district_based = $3, updated_at = NOW()
+       WHERE id = $4
        RETURNING *`,
       [
         name.trim(),
         display_order != null ? parseInt(display_order, 10) : 0,
+        toBool(is_district_based, false),
         req.params.id,
       ],
     );

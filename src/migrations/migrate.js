@@ -22,6 +22,7 @@ const migrations = [
   "010_gallery_district.sql",
   "011_simplify_projects.sql",
   "012_activity_projects.sql",
+  "013_official_subcategories.sql",
 ];
 
 async function runMigrations() {

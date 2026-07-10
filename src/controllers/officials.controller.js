@@ -30,7 +30,8 @@ async function bustListCaches() {
 
 const BASE_SELECT = `
     SELECT officials.*,
-           official_categories.name AS category_name
+           official_categories.name AS category_name,
+           official_categories.is_district_based AS category_is_district_based
     FROM   officials
     LEFT JOIN official_categories ON officials.category_id = official_categories.id
   `;
@@ -40,7 +41,9 @@ const LIST_ORDER = `
              officials.display_order ASC
   `;
 
-function groupByCategory(rows) {
+// groupDistricts: when true (directory endpoint), district-based
+// categories get a nested `districts` array instead of flat `officials`.
+function groupByCategory(rows, { groupDistricts = false } = {}) {
   const map = new Map();
   for (const row of rows) {
     const key = row.category_id ?? "__none__";
@@ -48,13 +51,39 @@ function groupByCategory(rows) {
       map.set(key, {
         category_id: row.category_id,
         category_name: row.category_name,
+        ...(groupDistricts
+          ? { is_district_based: row.category_is_district_based ?? false }
+          : {}),
         officials: [],
       });
     }
-    const { category_name, ...official } = row;
+    const { category_name, category_is_district_based, ...official } = row;
     map.get(key).officials.push(official);
   }
-  return [...map.values()];
+
+  const groups = [...map.values()];
+  if (!groupDistricts) return groups;
+
+  return groups.map((group) => {
+    if (!group.is_district_based) return group;
+
+    const districtMap = new Map();
+    for (const official of group.officials) {
+      const key = official.district?.trim() || "Unassigned";
+      if (!districtMap.has(key)) districtMap.set(key, []);
+      districtMap.get(key).push(official);
+    }
+    const districts = [...districtMap.entries()]
+      .map(([district, officials]) => ({ district, officials }))
+      .sort((a, b) => {
+        if (a.district === "Unassigned") return 1;
+        if (b.district === "Unassigned") return -1;
+        return a.district.localeCompare(b.district);
+      });
+
+    const { officials, ...rest } = group;
+    return { ...rest, districts };
+  });
 }
 
 function toBool(val, fallback) {
@@ -112,7 +141,7 @@ const getDirectory = async (req, res) => {
          ${LIST_ORDER}`,
       params,
     );
-    const grouped = groupByCategory(rows);
+    const grouped = groupByCategory(rows, { groupDistricts: true });
 
     if (!isSearch) {
       await redis.set("cache:directory", JSON.stringify(grouped), {
@@ -184,6 +213,7 @@ const create = async (req, res) => {
       email,
       bio,
       category_id,
+      district,
       show_in_whos_who,
       show_in_directory,
       display_order,
@@ -193,9 +223,9 @@ const create = async (req, res) => {
     const { rows } = await pool.query(
       `INSERT INTO officials
            (name, designation, organisation, division_office,
-            phone, mobile, email, photo_path, bio, category_id,
+            phone, mobile, email, photo_path, bio, category_id, district,
             show_in_whos_who, show_in_directory, display_order, is_active)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
          RETURNING *`,
       [
         name.trim(),
@@ -208,6 +238,7 @@ const create = async (req, res) => {
         photoPath,
         bio || null,
         category_id || null,
+        district || null,
         toBool(show_in_whos_who, false),
         toBool(show_in_directory, false),
         display_order != null ? parseInt(display_order, 10) : 0,
@@ -263,6 +294,7 @@ const update = async (req, res) => {
       email,
       bio,
       category_id,
+      district,
       show_in_whos_who,
       show_in_directory,
       display_order,
@@ -281,12 +313,13 @@ const update = async (req, res) => {
            photo_path       = $8,
            bio              = $9,
            category_id      = $10,
-           show_in_whos_who = $11,
-           show_in_directory= $12,
-           display_order    = $13,
-           is_active        = $14,
+           district         = $11,
+           show_in_whos_who = $12,
+           show_in_directory= $13,
+           display_order    = $14,
+           is_active        = $15,
            updated_at       = NOW()
-         WHERE id = $15
+         WHERE id = $16
          RETURNING *`,
       [
         name?.trim() ?? prev.name,
@@ -301,6 +334,7 @@ const update = async (req, res) => {
         photoPath,
         bio !== undefined ? bio || null : prev.bio,
         category_id !== undefined ? category_id || null : prev.category_id,
+        district !== undefined ? district || null : prev.district,
         show_in_whos_who !== undefined
           ? toBool(show_in_whos_who, prev.show_in_whos_who)
           : prev.show_in_whos_who,
