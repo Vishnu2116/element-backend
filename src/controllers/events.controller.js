@@ -124,6 +124,8 @@ const create = async (req, res) => {
 
   try {
     const { title, description, event_date, is_active } = req.body;
+    const eventDateValue =
+      event_date && event_date.trim() !== "" ? event_date : null;
     const slug = await ensureUniqueSlug(generateSlug(title));
 
     const { rows } = await pool.query(
@@ -134,7 +136,7 @@ const create = async (req, res) => {
         title.trim(),
         slug,
         description || null,
-        event_date,
+        eventDateValue,
         coverPath,
         toBool(is_active, true),
       ],
@@ -389,8 +391,7 @@ const toggleGallery = async (req, res) => {
 const createValidators = [
   body("title").trim().notEmpty().withMessage("Title is required"),
   body("event_date")
-    .notEmpty()
-    .withMessage("Event date is required")
+    .optional({ checkFalsy: true })
     .isDate()
     .withMessage("Invalid date"),
 ];
