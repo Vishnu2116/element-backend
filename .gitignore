@@ -6,4 +6,4 @@ uploads/*
 uploads/hero/*
 !uploads/hero/.gitkeep
 *.log
-src/scripts/createAdmin.js
+src/scripts/createAdmin.jsuploadAutomation/
