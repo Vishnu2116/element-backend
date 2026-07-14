@@ -31,11 +31,10 @@ function removeFile(filePath) {
   fs.unlink(path.join(process.cwd(), filePath), () => {});
 }
 
-async function bustSiteCaches(year) {
+async function bustSiteCaches() {
   const keys = [
-    "cache:gis:years",
-    `cache:gis:sites:${year}`,
-    ...VALID_DISTRICTS.map((d) => `cache:gis:sites:${year}:${d}`),
+    "cache:gis:sites",
+    ...VALID_DISTRICTS.map((d) => `cache:gis:sites:${d}`),
   ];
   await Promise.all(keys.map((k) => redis.del(k)));
 }
@@ -44,42 +43,23 @@ const getMapKey = (req, res) => {
   return res.json({ key: process.env.GOOGLE_MAPS_API_KEY || "" });
 };
 
-const getYears = async (req, res) => {
-  const cacheKey = "cache:gis:years";
-  try {
-    const cached = await redis.get(cacheKey);
-    if (cached) return res.json(JSON.parse(cached));
-    const { rows } = await pool.query(
-      "SELECT DISTINCT year FROM gis_sites WHERE is_active = true ORDER BY year DESC",
-    );
-    const years = rows.map((r) => r.year);
-    await redis.set(cacheKey, JSON.stringify(years), { EX: 86400 });
-    return res.json(years);
-  } catch (err) {
-    console.error("gis.getYears:", err.message);
-    return res.status(500).json({ error: "Internal server error" });
-  }
-};
-
 const getDistricts = (req, res) => {
   return res.json(VALID_DISTRICTS);
 };
 
 const getSites = async (req, res) => {
-  const year = req.query.year ? parseInt(req.query.year, 10) : null;
   const district = req.query.district?.trim() || null;
-  if (!year || isNaN(year)) {
-    return res.status(400).json({ error: "year query parameter is required" });
-  }
   const cacheKey = district
-    ? `cache:gis:sites:${year}:${district}`
-    : `cache:gis:sites:${year}`;
+    ? `cache:gis:sites:${district}`
+    : "cache:gis:sites";
   try {
     const cached = await redis.get(cacheKey);
     if (cached) return res.json(JSON.parse(cached));
     const { rows } = await pool.query(
       `SELECT
-         s.*,
+         s.id, s.sl_no, s.district, s.sub_division, s.range, s.beat,
+         s.jfmc_name, s.area_sanction, s.area_kobo, s.remarks,
+         s.overlapping_area, s.display_order,
          COALESCE(
            json_agg(
              json_build_object(
@@ -95,11 +75,10 @@ const getSites = async (req, res) => {
        FROM gis_sites s
        LEFT JOIN gis_kml_files k ON s.id = k.site_id
        WHERE s.is_active = true
-         AND s.year = $1
-         AND ($2::text IS NULL OR s.district = $2)
+         AND ($1::text IS NULL OR s.district = $1)
        GROUP BY s.id
-       ORDER BY s.display_order ASC, s.name ASC`,
-      [year, district],
+       ORDER BY s.district ASC, s.display_order ASC`,
+      [district],
     );
     await redis.set(cacheKey, JSON.stringify(rows), { EX: 86400 });
     return res.json(rows);
@@ -113,7 +92,10 @@ const getAllAdmin = async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT
-         s.*,
+         s.id, s.sl_no, s.district, s.sub_division, s.range, s.beat,
+         s.jfmc_name, s.area_sanction, s.area_kobo, s.remarks,
+         s.overlapping_area, s.display_order, s.is_active,
+         s.created_at, s.updated_at,
          COALESCE(
            json_agg(
              json_build_object(
@@ -129,7 +111,7 @@ const getAllAdmin = async (req, res) => {
        FROM gis_sites s
        LEFT JOIN gis_kml_files k ON s.id = k.site_id
        GROUP BY s.id
-       ORDER BY s.year DESC, s.display_order ASC, s.name ASC`,
+       ORDER BY s.district ASC, s.display_order ASC`,
     );
     return res.json(rows);
   } catch (err) {
@@ -144,35 +126,44 @@ const create = async (req, res) => {
     return res.status(422).json({ errors: errors.array() });
   try {
     const {
-      name,
+      sl_no,
       district,
-      year,
-      area_covered,
-      species_products,
-      description,
-      is_active,
+      sub_division,
+      range,
+      beat,
+      jfmc_name,
+      area_sanction,
+      area_kobo,
+      remarks,
+      overlapping_area,
       display_order,
+      is_active,
     } = req.body;
     const { rows } = await pool.query(
       `INSERT INTO gis_sites
-         (name, district, year, area_covered, species_products,
-          description, is_active, display_order)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+         (sl_no, district, sub_division, range, beat, jfmc_name,
+          area_sanction, area_kobo, remarks, overlapping_area,
+          display_order, is_active)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
        RETURNING *`,
       [
-        name.trim(),
+        sl_no != null && sl_no !== "" ? parseInt(sl_no, 10) : null,
         district,
-        parseInt(year, 10),
-        area_covered || null,
-        species_products || null,
-        description || null,
+        sub_division || null,
+        range || null,
+        beat || null,
+        jfmc_name.trim(),
+        area_sanction != null && area_sanction !== "" ? area_sanction : null,
+        area_kobo != null && area_kobo !== "" ? area_kobo : null,
+        remarks || null,
+        overlapping_area || null,
+        display_order != null ? parseInt(display_order, 10) : 0,
         is_active !== undefined
           ? is_active === "true" || is_active === true
           : true,
-        display_order != null ? parseInt(display_order, 10) : 0,
       ],
     );
-    await bustSiteCaches(rows[0].year);
+    await bustSiteCaches();
     await updateLastUpdated();
     return res.status(201).json(rows[0]);
   } catch (err) {
@@ -195,50 +186,71 @@ const update = async (req, res) => {
     if (!existing[0]) return res.status(404).json({ error: "Not found" });
     const prev = existing[0];
     const {
-      name,
+      sl_no,
       district,
-      year,
-      area_covered,
-      species_products,
-      description,
-      is_active,
+      sub_division,
+      range,
+      beat,
+      jfmc_name,
+      area_sanction,
+      area_kobo,
+      remarks,
+      overlapping_area,
       display_order,
+      is_active,
     } = req.body;
-    const newYear = year != null ? parseInt(year, 10) : prev.year;
     const { rows } = await pool.query(
       `UPDATE gis_sites SET
-         name             = $1,
+         sl_no            = $1,
          district         = $2,
-         year             = $3,
-         area_covered     = $4,
-         species_products = $5,
-         description      = $6,
-         is_active        = $7,
-         display_order    = $8,
+         sub_division     = $3,
+         range            = $4,
+         beat             = $5,
+         jfmc_name        = $6,
+         area_sanction    = $7,
+         area_kobo        = $8,
+         remarks          = $9,
+         overlapping_area = $10,
+         display_order    = $11,
+         is_active        = $12,
          updated_at       = NOW()
-       WHERE id = $9
+       WHERE id = $13
        RETURNING *`,
       [
-        name?.trim() ?? prev.name,
+        sl_no !== undefined
+          ? sl_no != null && sl_no !== ""
+            ? parseInt(sl_no, 10)
+            : null
+          : prev.sl_no,
         district !== undefined ? district : prev.district,
-        newYear,
-        area_covered !== undefined ? area_covered || null : prev.area_covered,
-        species_products !== undefined
-          ? species_products || null
-          : prev.species_products,
-        description !== undefined ? description || null : prev.description,
-        is_active !== undefined
-          ? is_active === "true" || is_active === true
-          : prev.is_active,
+        sub_division !== undefined ? sub_division || null : prev.sub_division,
+        range !== undefined ? range || null : prev.range,
+        beat !== undefined ? beat || null : prev.beat,
+        jfmc_name?.trim() ?? prev.jfmc_name,
+        area_sanction !== undefined
+          ? area_sanction === ""
+            ? null
+            : area_sanction
+          : prev.area_sanction,
+        area_kobo !== undefined
+          ? area_kobo === ""
+            ? null
+            : area_kobo
+          : prev.area_kobo,
+        remarks !== undefined ? remarks || null : prev.remarks,
+        overlapping_area !== undefined
+          ? overlapping_area || null
+          : prev.overlapping_area,
         display_order != null
           ? parseInt(display_order, 10)
           : prev.display_order,
+        is_active !== undefined
+          ? is_active === "true" || is_active === true
+          : prev.is_active,
         req.params.id,
       ],
     );
-    const cacheOps = [bustSiteCaches(newYear)];
-    if (prev.year !== newYear) cacheOps.push(bustSiteCaches(prev.year));
-    await Promise.all(cacheOps);
+    await bustSiteCaches();
     await updateLastUpdated();
     return res.json(rows[0]);
   } catch (err) {
@@ -261,7 +273,7 @@ const remove = async (req, res) => {
     );
     if (!rows[0]) return res.status(404).json({ error: "Not found" });
     for (const kml of kmlRows) removeFile(kml.file_path);
-    await bustSiteCaches(rows[0].year);
+    await bustSiteCaches();
     await updateLastUpdated();
     return res.json({ message: "Deleted successfully" });
   } catch (err) {
@@ -278,7 +290,7 @@ const addKml = async (req, res) => {
   if (!req.file) return res.status(422).json({ error: "No KML file uploaded" });
   try {
     const { rows: siteRows } = await pool.query(
-      "SELECT id, year FROM gis_sites WHERE id = $1",
+      "SELECT id FROM gis_sites WHERE id = $1",
       [req.params.id],
     );
     if (!siteRows[0]) {
@@ -307,7 +319,7 @@ const addKml = async (req, res) => {
         displayOrder,
       ],
     );
-    await bustSiteCaches(siteRows[0].year);
+    await bustSiteCaches();
     await updateLastUpdated();
     return res.status(201).json(rows[0]);
   } catch (err) {
@@ -322,17 +334,12 @@ const removeKml = async (req, res) => {
     return res.status(404).json({ error: "Not found" });
   try {
     const { rows } = await pool.query(
-      `WITH deleted AS (
-         DELETE FROM gis_kml_files WHERE id = $1 RETURNING *
-       )
-       SELECT d.*, s.year
-       FROM deleted d
-       JOIN gis_sites s ON d.site_id = s.id`,
+      "DELETE FROM gis_kml_files WHERE id = $1 RETURNING *",
       [req.params.id],
     );
     if (!rows[0]) return res.status(404).json({ error: "Not found" });
     removeFile(rows[0].file_path);
-    await bustSiteCaches(rows[0].year);
+    await bustSiteCaches();
     await updateLastUpdated();
     return res.json({ message: "Deleted successfully" });
   } catch (err) {
@@ -342,34 +349,40 @@ const removeKml = async (req, res) => {
 };
 
 const createValidators = [
-  body("name").trim().notEmpty().withMessage("Name is required"),
+  body("jfmc_name").trim().notEmpty().withMessage("JFMC name is required"),
   body("district")
     .notEmpty()
     .withMessage("District is required")
     .isIn(VALID_DISTRICTS)
     .withMessage("Invalid district"),
-  body("year")
-    .notEmpty()
-    .withMessage("Year is required")
-    .isInt({ min: 1000, max: 9999 })
-    .withMessage("Year must be a valid 4-digit number"),
+  body("area_sanction")
+    .optional({ nullable: true, checkFalsy: true })
+    .isNumeric()
+    .withMessage("Area sanction must be numeric"),
+  body("area_kobo")
+    .optional({ nullable: true, checkFalsy: true })
+    .isNumeric()
+    .withMessage("Area kobo must be numeric"),
 ];
 
 const updateValidators = [
-  body("name").trim().notEmpty().withMessage("Name is required"),
+  body("jfmc_name").trim().notEmpty().withMessage("JFMC name is required"),
   body("district")
     .optional()
     .isIn(VALID_DISTRICTS)
     .withMessage("Invalid district"),
-  body("year")
-    .optional()
-    .isInt({ min: 1000, max: 9999 })
-    .withMessage("Year must be a valid 4-digit number"),
+  body("area_sanction")
+    .optional({ nullable: true, checkFalsy: true })
+    .isNumeric()
+    .withMessage("Area sanction must be numeric"),
+  body("area_kobo")
+    .optional({ nullable: true, checkFalsy: true })
+    .isNumeric()
+    .withMessage("Area kobo must be numeric"),
 ];
 
 module.exports = {
   getMapKey,
-  getYears,
   getDistricts,
   getSites,
   getAllAdmin,

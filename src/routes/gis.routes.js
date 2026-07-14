@@ -1,7 +1,7 @@
 const { Router } = require('express');
 
 const {
-  getMapKey, getYears, getDistricts, getSites,
+  getMapKey, getDistricts, getSites,
   getAllAdmin, create, update, remove,
   addKml, removeKml,
   createValidators, updateValidators,
@@ -15,7 +15,6 @@ const router = Router();
 
 // ── Public ─────────────────────────────────────────────────────
 router.get('/gis/map-key', mapKeyLimiter, getMapKey);
-router.get('/gis/years',     globalLimiter, getYears);
 router.get('/gis/districts', globalLimiter, getDistricts);
 router.get('/gis/sites',     globalLimiter, getSites);
 

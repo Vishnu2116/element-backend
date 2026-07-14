@@ -16,6 +16,8 @@ router.use("/", require("./gis.routes"));
 router.use("/", require("./settings.routes"));
 router.use("/", require("./rti.routes"));
 router.use("/", require("./visitor.routes"));
+router.use("/", require("./contact.routes"));
+router.use("/", require("./feedback.routes"));
 
 router.get("/health", (req, res) => res.json({ status: "ok" }));
 

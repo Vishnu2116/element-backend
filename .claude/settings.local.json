@@ -6,7 +6,8 @@
       "Bash(node src/migrations/migrate.js)",
       "Bash(node -e ' *)",
       "Bash(redis-cli *)",
-      "Read(//dev/**)"
+      "Read(//dev/**)",
+      "Bash(sed 's/=$//')"
     ]
   }
 }

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document>
+	<name>1.0 ha ANR Bamboo.kml</name>
+	<Style id="inline">
+		<LineStyle>
+			<color>ff0000ff</color>
+			<width>2</width>
+		</LineStyle>
+		<PolyStyle>
+			<fill>0</fill>
+		</PolyStyle>
+	</Style>
+	<StyleMap id="inline0">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#inline</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#inline1</styleUrl>
+		</Pair>
+	</StyleMap>
+	<Style id="inline1">
+		<LineStyle>
+			<color>ff0000ff</color>
+			<width>2</width>
+		</LineStyle>
+		<PolyStyle>
+			<fill>0</fill>
+		</PolyStyle>
+	</Style>
+	<Placemark>
+		<name>1.0 ha ANR Bamboo</name>
+		<styleUrl>#inline0</styleUrl>
+		<Polygon>
+			<tessellate>1</tessellate>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						91.76540090324337,24.1756179318018,0 91.76530795815367,24.17601637522981,0 91.76511040894516,24.17604985670922,0 91.76485837002119,24.17605733904191,0 91.7643704421167,24.17574910775928,0 91.76438876094444,24.1756113347092,0 91.76445003343453,24.175447519234,0 91.76460248899721,24.17528258104991,0 91.76500922696844,24.17507798296696,0 91.76510957910928,24.17504193672369,0 91.76541035020999,24.17541633907214,0 91.76544102622975,24.17560147710559,0 91.76550425770213,24.1753854501122,0 91.76558219980997,24.17517717615732,0 91.765713147488,24.17473304986139,0 91.76578935595573,24.1747330499385,0 91.76585310502196,24.17472560215146,0 91.76586731746379,24.17483936003949,0 91.76595913631643,24.17493894787539,0 91.76596735031458,24.17501176599812,0 91.76594437367096,24.17508356984011,0 91.76586612803682,24.17517717698797,0 91.7657302910566,24.1753548536442,0 91.76551826575161,24.17559491811037,0 91.76540090324337,24.1756179318018,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+		<atom:link rel="app" href="https://www.google.com/earth/about/versions/#earth-pro" title="Google Earth Pro 7.3.7.1155"></atom:link>
+	</Placemark>
+</Document>
+</kml>

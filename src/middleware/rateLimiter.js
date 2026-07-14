@@ -28,4 +28,14 @@ const mapKeyLimiter = rateLimit({
   message: { error: "Too many requests, please try again later." },
 });
 
-module.exports = { globalLimiter, strictLimiter, mapKeyLimiter };
+const formLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: isDev ? 100 : 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Too many submissions. Please try again after 15 minutes.",
+  },
+});
+
+module.exports = { globalLimiter, strictLimiter, mapKeyLimiter, formLimiter };

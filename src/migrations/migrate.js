@@ -23,6 +23,8 @@ const migrations = [
   "011_simplify_projects.sql",
   "012_activity_projects.sql",
   "013_official_subcategories.sql",
+  "014_contact_feedback.sql",
+  "015_replace_gis_sites.sql",
 ];
 
 async function runMigrations() {
