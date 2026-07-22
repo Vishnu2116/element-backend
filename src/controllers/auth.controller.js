@@ -93,14 +93,14 @@ const forgotPassword = async (req, res) => {
 
   try {
     const { rows } = await pool.query(
-      'SELECT id, email, name FROM admins WHERE email = $1',
+      'SELECT id, email, name, token_version FROM admins WHERE email = $1',
       [email.toLowerCase()]
     );
 
     const admin = rows[0];
     if (admin) {
       const token = jwt.sign(
-        { id: admin.id, purpose: 'password_reset' },
+        { id: admin.id, purpose: 'password_reset', token_version: admin.token_version },
         process.env.JWT_SECRET,
         { algorithm: 'HS256', expiresIn: '30m' }
       );
@@ -147,10 +147,20 @@ const resetPassword = async (req, res) => {
   }
 
   try {
+    const { rows } = await pool.query(
+      'SELECT token_version FROM admins WHERE id = $1',
+      [decoded.id]
+    );
+
+    const admin = rows[0];
+    if (!admin || admin.token_version !== decoded.token_version) {
+      return res.status(401).json({ error: 'Invalid or expired reset link' });
+    }
+
     const password_hash = await bcrypt.hash(new_password, 12);
 
     await pool.query(
-      'UPDATE admins SET password_hash = $1 WHERE id = $2',
+      'UPDATE admins SET password_hash = $1, token_version = token_version + 1 WHERE id = $2',
       [password_hash, decoded.id]
     );
 

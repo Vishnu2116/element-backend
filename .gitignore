@@ -6,5 +6,7 @@ uploads/*
 uploads/hero/*
 !uploads/hero/.gitkeep
 *.log
-src/scripts/createAdmin.jsuploadAutomation/
+src/scripts/createAdmin.js
+uploadAutomation/
 uploadAutomation/*
+gis_data_export.sql

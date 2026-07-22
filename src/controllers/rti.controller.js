@@ -7,6 +7,7 @@ const redis = require('../config/redis');
 const updateLastUpdated = require('../helpers/updateLastUpdated');
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const PHONE_REGEX = /^[0-9+\-\s()]{7,15}$/;
 
 const VALID_OFFICER_TYPES = [
   'public_information_officer',
@@ -313,10 +314,26 @@ const officerCreateValidators = [
     .notEmpty().withMessage('Officer type is required')
     .isIn(VALID_OFFICER_TYPES)
     .withMessage('officer_type must be public_information_officer or first_appellate_officer'),
+  body('email')
+    .optional({ nullable: true, checkFalsy: true })
+    .isEmail()
+    .withMessage('Must be a valid email'),
+  body('phone')
+    .optional({ nullable: true, checkFalsy: true })
+    .matches(PHONE_REGEX)
+    .withMessage('Phone must be a valid phone number'),
 ];
 
 const officerUpdateValidators = [
   body('name').trim().notEmpty().withMessage('Name is required'),
+  body('email')
+    .optional({ nullable: true, checkFalsy: true })
+    .isEmail()
+    .withMessage('Must be a valid email'),
+  body('phone')
+    .optional({ nullable: true, checkFalsy: true })
+    .matches(PHONE_REGEX)
+    .withMessage('Phone must be a valid phone number'),
 ];
 
 const documentValidators = [

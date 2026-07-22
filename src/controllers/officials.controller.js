@@ -5,9 +5,11 @@ const { validationResult, body } = require("express-validator");
 const pool = require("../config/db");
 const redis = require("../config/redis");
 const updateLastUpdated = require("../helpers/updateLastUpdated");
+const { VALID_DISTRICTS } = require("./gis.controller");
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const PHONE_REGEX = /^[0-9+\-\s()]{7,15}$/;
 
 const OFFICIALS_DIR = path.join(process.cwd(), "uploads", "officials");
 fs.mkdirSync(OFFICIALS_DIR, { recursive: true });
@@ -387,6 +389,26 @@ const nameRequired = body("name")
   .notEmpty()
   .withMessage("Name is required");
 
+const validators = [
+  nameRequired,
+  body("email")
+    .optional({ nullable: true, checkFalsy: true })
+    .isEmail()
+    .withMessage("Must be a valid email"),
+  body("phone")
+    .optional({ nullable: true, checkFalsy: true })
+    .matches(PHONE_REGEX)
+    .withMessage("Phone must be a valid phone number"),
+  body("mobile")
+    .optional({ nullable: true, checkFalsy: true })
+    .matches(PHONE_REGEX)
+    .withMessage("Mobile must be a valid phone number"),
+  body("district")
+    .optional({ nullable: true, checkFalsy: true })
+    .isIn(VALID_DISTRICTS)
+    .withMessage("Invalid district"),
+];
+
 module.exports = {
   getWhosWho,
   getDirectory,
@@ -395,5 +417,5 @@ module.exports = {
   create,
   update,
   remove,
-  nameRequired,
+  validators,
 };

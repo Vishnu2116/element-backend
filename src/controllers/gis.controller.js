@@ -393,4 +393,5 @@ module.exports = {
   removeKml,
   createValidators,
   updateValidators,
+  VALID_DISTRICTS,
 };

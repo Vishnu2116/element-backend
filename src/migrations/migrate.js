@@ -25,6 +25,7 @@ const migrations = [
   "013_official_subcategories.sql",
   "014_contact_feedback.sql",
   "015_replace_gis_sites.sql",
+  "016_admin_token_version.sql",
 ];
 
 async function runMigrations() {

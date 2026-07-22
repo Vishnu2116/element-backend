@@ -3,7 +3,7 @@ const { Router } = require('express');
 const {
   getWhosWho, getDirectory, getById,
   getAllAdmin, create, update, remove,
-  nameRequired: officialNameRequired,
+  validators: officialValidators,
 } = require('../controllers/officials.controller');
 
 const {
@@ -31,8 +31,8 @@ router.delete('/admin/official-categories/:id',  auth,                         r
 
 // ── Admin: officials ───────────────────────────────────────────
 router.get   ('/admin/officials',      auth, getAllAdmin);
-router.post  ('/admin/officials',      auth, uploadImage('photo'), officialNameRequired, create);
-router.put   ('/admin/officials/:id',  auth, uploadImage('photo'), officialNameRequired, update);
+router.post  ('/admin/officials',      auth, uploadImage('photo'), officialValidators, create);
+router.put   ('/admin/officials/:id',  auth, uploadImage('photo'), officialValidators, update);
 router.delete('/admin/officials/:id',  auth, remove);
 
 module.exports = router;

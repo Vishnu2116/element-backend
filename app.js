@@ -57,6 +57,10 @@ const allowedOrigins = process.env.FRONTEND_URL
   : [];
 
 if (allowedOrigins.length === 0) {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('FATAL: FRONTEND_URL is not set in .env');
+    process.exit(1);
+  }
   console.warn('WARNING: FRONTEND_URL not set — CORS is open to all origins');
 }
 

@@ -11,7 +11,18 @@
       "Bash(xxd .gitignore)",
       "Bash(grep -iE \"\\\\.env$|secret|credential|\\\\.pem$|\\\\.key$\")",
       "Bash(grep -niE \"JWT_SECRET\\\\s*=\\\\s*[a-zA-Z0-9]|SMTP_PASS\\\\s*=\\\\s*[a-zA-Z0-9]|password\\\\s*:\\\\s*['\\\\\"][a-zA-Z0-9]{4,}['\\\\\"]|AKIA[0-9A-Z]{16}\")",
-      "Bash(npm audit *)"
+      "Bash(npm audit *)",
+      "Bash(git check-ignore *)",
+      "Bash(echo \"exit code: $?\")",
+      "Bash(echo \"exit: $?\")",
+      "Bash(git --git-dir=.git --work-tree=. check-ignore -v src/scripts/createAdmin.js)",
+      "Bash(mkdir -p src/scripts/testdir)",
+      "Bash(touch src/scripts/testdir/dummy.js)",
+      "Bash(echo \"src/scripts/testdir/dummy.js\")",
+      "Bash(git help *)",
+      "Bash(col -b)",
+      "Bash(git rm *)",
+      "Bash(npm ls *)"
     ]
   }
 }

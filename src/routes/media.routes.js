@@ -2,6 +2,7 @@ const { Router } = require('express');
 
 const {
   getDistricts, getByDistrict, create: createGallery, remove: removeGallery,
+  createValidators: galleryCreateValidators,
 } = require('../controllers/gallery.controller');
 
 const {
@@ -13,7 +14,7 @@ const {
 
 const {
   get: getSocial, updateEmbeds,
-  addVideo, updateVideo, removeVideo, videoValidators,
+  addVideo, updateVideo, removeVideo, videoValidators, embedsValidators,
 } = require('../controllers/socialMedia.controller');
 
 const auth = require('../middleware/auth');
@@ -30,7 +31,7 @@ router.get('/media/events',         globalLimiter, getEvents);
 router.get('/media/events/:slug',   globalLimiter, getBySlug);
 
 // ── Admin: gallery ─────────────────────────────────────────────
-router.post  ('/admin/gallery',     auth, uploadMultiple('images', 20), createGallery);
+router.post  ('/admin/gallery',     auth, uploadMultiple('images', 20), galleryCreateValidators, createGallery);
 router.delete('/admin/gallery/:id', auth, removeGallery);
 
 // ── Admin: events — specific sub-routes BEFORE /:id routes ─────
@@ -44,7 +45,7 @@ router.delete('/admin/events/:id',      auth, removeEvent);
 router.post  ('/admin/events/:id/images', auth, uploadMultiple('images', 20), addImages);
 
 // ── Admin: social media embeds & videos ────────────────────────
-router.put   ('/admin/social-media/embeds',       auth, updateEmbeds);
+router.put   ('/admin/social-media/embeds',       auth, embedsValidators, updateEmbeds);
 router.post  ('/admin/social-media/videos',       auth, videoValidators, addVideo);
 router.put   ('/admin/social-media/videos/:id',   auth, videoValidators, updateVideo);
 router.delete('/admin/social-media/videos/:id',   auth, removeVideo);

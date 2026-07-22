@@ -1,8 +1,10 @@
 const fs = require("fs");
 const path = require("path");
+const { body, validationResult } = require("express-validator");
 const pool = require("../config/db");
 const redis = require("../config/redis");
 const updateLastUpdated = require("../helpers/updateLastUpdated");
+const { VALID_DISTRICTS } = require("./gis.controller");
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -65,6 +67,11 @@ const getByDistrict = async (req, res) => {
 };
 
 const create = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    if (req.files) req.files.forEach((f) => fs.unlink(f.path, () => {}));
+    return res.status(422).json({ errors: errors.array() });
+  }
   if (!req.files || req.files.length === 0) {
     return res.status(422).json({ error: "No images uploaded" });
   }
@@ -124,4 +131,18 @@ const remove = async (req, res) => {
   }
 };
 
-module.exports = { getDistricts, getByDistrict, create, remove };
+const createValidators = [
+  body("district")
+    .notEmpty()
+    .withMessage("District is required")
+    .isIn(VALID_DISTRICTS)
+    .withMessage("Invalid district"),
+];
+
+module.exports = {
+  getDistricts,
+  getByDistrict,
+  create,
+  remove,
+  createValidators,
+};

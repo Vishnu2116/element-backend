@@ -32,6 +32,10 @@ const get = async (req, res) => {
 };
 
 const updateEmbeds = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty())
+    return res.status(422).json({ errors: errors.array() });
+
   const { facebook_embed_code, twitter_embed_code } = req.body;
   try {
     const { rows } = await pool.query(
@@ -146,6 +150,17 @@ const videoValidators = [
   body("youtube_url").trim().notEmpty().withMessage("YouTube URL is required"),
 ];
 
+const embedsValidators = [
+  body("facebook_embed_code")
+    .optional({ nullable: true, checkFalsy: true })
+    .isLength({ max: 5000 })
+    .withMessage("Facebook embed code must be 5000 characters or fewer"),
+  body("twitter_embed_code")
+    .optional({ nullable: true, checkFalsy: true })
+    .isLength({ max: 5000 })
+    .withMessage("Twitter embed code must be 5000 characters or fewer"),
+];
+
 module.exports = {
   get,
   updateEmbeds,
@@ -153,4 +168,5 @@ module.exports = {
   updateVideo,
   removeVideo,
   videoValidators,
+  embedsValidators,
 };
