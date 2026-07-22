@@ -6,6 +6,7 @@ const pool = require("../config/db");
 const redis = require("../config/redis");
 const updateLastUpdated = require("../helpers/updateLastUpdated");
 const { verifyFileSignature, verifyAllFileSignatures } = require("../helpers/verifyFileSignature");
+const { sanitizeText } = require("../helpers/sanitize");
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -266,7 +267,7 @@ const create = async (req, res) => {
         title.trim(),
         slug,
         thumbnailPath,
-        description || null,
+        description ? sanitizeText(description) : null,
         JSON.stringify(bulletPoints),
         display_order != null ? parseInt(display_order, 10) : 0,
         toBool(is_active, true),
@@ -366,7 +367,9 @@ const update = async (req, res) => {
         title?.trim() ?? prev.title,
         slug,
         thumbnailPath,
-        description !== undefined ? description || null : prev.description,
+        description !== undefined
+          ? (description ? sanitizeText(description) : null)
+          : prev.description,
         JSON.stringify(bulletPoints),
         display_order != null
           ? parseInt(display_order, 10)

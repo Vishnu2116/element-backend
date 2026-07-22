@@ -7,6 +7,7 @@ const redis = require("../config/redis");
 const updateLastUpdated = require("../helpers/updateLastUpdated");
 const { VALID_DISTRICTS } = require("./gis.controller");
 const { verifyFileSignature } = require("../helpers/verifyFileSignature");
+const { sanitizeText } = require("../helpers/sanitize");
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -247,7 +248,7 @@ const create = async (req, res) => {
         mobile || null,
         email || null,
         photoPath,
-        bio || null,
+        bio ? sanitizeText(bio) : null,
         category_id || null,
         district || null,
         toBool(show_in_whos_who, false),
@@ -348,7 +349,7 @@ const update = async (req, res) => {
         mobile !== undefined ? mobile || null : prev.mobile,
         email !== undefined ? email || null : prev.email,
         photoPath,
-        bio !== undefined ? bio || null : prev.bio,
+        bio !== undefined ? (bio ? sanitizeText(bio) : null) : prev.bio,
         category_id !== undefined ? category_id || null : prev.category_id,
         district !== undefined ? district || null : prev.district,
         show_in_whos_who !== undefined

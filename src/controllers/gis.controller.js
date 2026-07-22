@@ -4,6 +4,7 @@ const { body, validationResult } = require("express-validator");
 const pool = require("../config/db");
 const redis = require("../config/redis");
 const updateLastUpdated = require("../helpers/updateLastUpdated");
+const { sanitizeText } = require("../helpers/sanitize");
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -155,7 +156,7 @@ const create = async (req, res) => {
         jfmc_name.trim(),
         area_sanction != null && area_sanction !== "" ? area_sanction : null,
         area_kobo != null && area_kobo !== "" ? area_kobo : null,
-        remarks || null,
+        remarks ? sanitizeText(remarks) : null,
         overlapping_area || null,
         display_order != null ? parseInt(display_order, 10) : 0,
         is_active !== undefined
@@ -237,7 +238,9 @@ const update = async (req, res) => {
             ? null
             : area_kobo
           : prev.area_kobo,
-        remarks !== undefined ? remarks || null : prev.remarks,
+        remarks !== undefined
+          ? (remarks ? sanitizeText(remarks) : null)
+          : prev.remarks,
         overlapping_area !== undefined
           ? overlapping_area || null
           : prev.overlapping_area,

@@ -5,6 +5,7 @@ const pool = require("../config/db");
 const redis = require("../config/redis");
 const updateLastUpdated = require("../helpers/updateLastUpdated");
 const { verifyAllFileSignatures } = require("../helpers/verifyFileSignature");
+const { sanitizeText } = require("../helpers/sanitize");
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -201,6 +202,7 @@ const upsert = async (req, res) => {
       return res.status(404).json({ error: "Project not found" });
 
     const { paragraph, is_active } = req.body;
+    const sanitizedParagraph = paragraph ? sanitizeText(paragraph) : null;
     const bulletPoints = Array.isArray(req.body.bullet_points)
       ? req.body.bullet_points
       : safeParseJSON(req.body.bullet_points, []);
@@ -220,7 +222,7 @@ const upsert = async (req, res) => {
              WHERE project_id=$5
              RETURNING *`,
           [
-            paragraph || null,
+            sanitizedParagraph,
             JSON.stringify(bulletPoints),
             JSON.stringify(stats),
             toBool(is_active, true),
@@ -234,7 +236,7 @@ const upsert = async (req, res) => {
              RETURNING *`,
           [
             req.params.projectId,
-            paragraph || null,
+            sanitizedParagraph,
             JSON.stringify(bulletPoints),
             JSON.stringify(stats),
             toBool(is_active, true),

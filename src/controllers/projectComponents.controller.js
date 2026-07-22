@@ -2,6 +2,7 @@ const { validationResult, body } = require("express-validator");
 const pool = require("../config/db");
 const redis = require("../config/redis");
 const updateLastUpdated = require("../helpers/updateLastUpdated");
+const { sanitizeText } = require("../helpers/sanitize");
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -36,7 +37,7 @@ function componentFields(body) {
     parseInt(component_number, 10),
     label || null,
     name.trim(),
-    description || null,
+    description ? sanitizeText(description) : null,
     icon_name || null,
     // stat1_label || null,
     // stat1_value || null,
