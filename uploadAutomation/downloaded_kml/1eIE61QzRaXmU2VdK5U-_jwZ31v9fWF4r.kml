@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document>
+	<name>ANR BAMBOO plant. over 10.0 ha at Delwai jfmc under Harincherra Beat.gpx 2-19_24_41.kml</name>
+	<StyleMap id="msn_ylw-pushpin">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#sn_ylw-pushpin</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#sh_ylw-pushpin</styleUrl>
+		</Pair>
+	</StyleMap>
+	<Style id="sh_ylw-pushpin">
+		<IconStyle>
+			<scale>1.3</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>
+			</Icon>
+			<hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
+		<BalloonStyle>
+		</BalloonStyle>
+		<PolyStyle>
+			<fill>0</fill>
+		</PolyStyle>
+	</Style>
+	<Style id="sn_ylw-pushpin">
+		<IconStyle>
+			<scale>1.1</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>
+			</Icon>
+			<hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
+		<BalloonStyle>
+		</BalloonStyle>
+		<PolyStyle>
+			<fill>0</fill>
+		</PolyStyle>
+	</Style>
+	<Placemark>
+		<name>ANR BAMBOO plant. over 10.0 ha at Delwai jfmc under Harincherra Beat.gpx 2-19_24_41</name>
+		<styleUrl>#msn_ylw-pushpin</styleUrl>
+		<Polygon>
+			<tessellate>1</tessellate>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						91.87606650614282,23.83597113167748,0 91.87550819478807,23.83594202234791,0 91.87519801001947,23.83591641432773,0 91.87508736342139,23.83573514926447,0 91.87525977163062,23.83561980432481,0 91.87529563350805,23.83514682963866,0 91.87531387971875,23.83501216017928,0 91.87538772969417,23.83494524770087,0 91.87540443208084,23.83484873578388,0 91.87542186567212,23.83472765773109,0 91.87554905658477,23.83466321253828,0 91.87567167678992,23.83455454311661,0 91.87576666429426,23.83442860955824,0 91.87614997462853,23.83437273095047,0 91.87678166535986,23.83436467722121,0 91.87746272597872,23.83436635960422,0 91.87775720363442,23.8345038269993,0 91.87797409911607,23.83450251804904,0 91.87829103291423,23.83449248990569,0 91.87844017384545,23.83475607841091,0 91.87931677304724,23.83512673304007,0 91.87954521880363,23.83546826161544,0 91.87963640386704,23.83573863919205,0 91.87990329632525,23.83637338977603,0 91.87986336117035,23.83691269970756,0 91.87960860016122,23.83737377935658,0 91.8792235147077,23.83757317970515,0 91.87873030051837,23.83772060241908,0 91.87822550398424,23.83736004656699,0 91.87833290723242,23.83711388245965,0 91.87816906291334,23.83677894602699,0 91.87784155986554,23.83656388860408,0 91.87771975252956,23.83637546434258,0 91.87748205245106,23.83626244324965,0 91.87720369039678,23.83613303095036,0 91.87696596743346,23.83610315297724,0 91.87655408296676,23.83597335438014,0 91.87641560199305,23.83580389571802,0 91.87606650614282,23.83597113167748,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+		<atom:link rel="app" href="https://www.google.com/earth/about/versions/#earth-pro" title="Google Earth Pro 7.3.7.1155"></atom:link>
+	</Placemark>
+</Document>
+</kml>

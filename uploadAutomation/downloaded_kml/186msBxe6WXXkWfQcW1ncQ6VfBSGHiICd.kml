@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document>
+	<name>Langma 3 ha AR Bamboo.kmz</name>
+	<open>1</open>
+	<atom:link rel="app" href="https://www.google.com/earth/about/versions/#earth-pro" title="Google Earth Pro 7.3.7.1155"></atom:link>
+	<Style id="inline">
+		<LineStyle>
+			<color>ff0000ff</color>
+			<width>2</width>
+		</LineStyle>
+		<PolyStyle>
+			<fill>0</fill>
+		</PolyStyle>
+	</Style>
+	<Style id="inline0">
+		<LineStyle>
+			<color>ff0000ff</color>
+			<width>2</width>
+		</LineStyle>
+		<PolyStyle>
+			<fill>0</fill>
+		</PolyStyle>
+	</Style>
+	<StyleMap id="inline1">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#inline</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#inline0</styleUrl>
+		</Pair>
+	</StyleMap>
+	<Placemark>
+		<name>Langma 3 ha AR Bamboo</name>
+		<styleUrl>#inline1</styleUrl>
+		<Polygon>
+			<tessellate>1</tessellate>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						91.58396051351227,23.96108956485615,0 91.58455420054892,23.96118750538718,0 91.58490836652415,23.96118364052737,0 91.58506995373803,23.9612215727165,0 91.58510839205093,23.96144407953039,0 91.58537837163857,23.96154300812866,0 91.58575087593454,23.96160189871244,0 91.58601349577714,23.96171039953265,0 91.58603173323739,23.96141824753011,0 91.5860914898859,23.96122818939623,0 91.58605732662761,23.96101942398552,0 91.58597733775943,23.96087148756925,0 91.58592433369134,23.96075446735298,0 91.58570662347236,23.96078158675246,0 91.58553562439155,23.96072477376127,0 91.58542848077286,23.96064838526528,0 91.58533372161394,23.9604260111721,0 91.58531771649974,23.96031840835633,0 91.58527436287977,23.96015402133987,0 91.58523054753253,23.95991475362002,0 91.58497406360968,23.95982086982105,0 91.58477681414631,23.95973717972944,0 91.58467529495162,23.95967415892298,0 91.58457113251762,23.95964527579559,0 91.58441331966564,23.95970320874465,0 91.58424424991624,23.95966839815616,0 91.58386152452202,23.95962018728623,0 91.5837927620029,23.95982020142365,0 91.58394703783101,23.96015038099395,0 91.58398142651475,23.96048088287379,0 91.58407426696468,23.96073115793211,0 91.58395558625499,23.96085906464819,0 91.58396051351227,23.96108956485615,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+</Document>
+</kml>

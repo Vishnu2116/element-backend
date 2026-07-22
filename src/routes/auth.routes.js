@@ -45,7 +45,8 @@ const resetPasswordValidators = [
 router.post('/login', strictLimiter, loginValidators, login);
 router.get('/me', auth, getMe);
 router.put('/change-password', auth, changePasswordValidators, changePassword);
-router.post('/forgot-password', formLimiter, forgotPasswordValidators, forgotPassword);
-router.post('/reset-password', formLimiter, resetPasswordValidators, resetPassword);
+// Disabled pending SMTP credentials from the department — see auth.controller.js
+// router.post('/forgot-password', formLimiter, forgotPasswordValidators, forgotPassword);
+// router.post('/reset-password', formLimiter, resetPasswordValidators, resetPassword);
 
 module.exports = router;

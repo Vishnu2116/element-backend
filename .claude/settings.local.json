@@ -7,7 +7,11 @@
       "Bash(node -e ' *)",
       "Bash(redis-cli *)",
       "Read(//dev/**)",
-      "Bash(sed 's/=$//')"
+      "Bash(sed 's/=$//')",
+      "Bash(xxd .gitignore)",
+      "Bash(grep -iE \"\\\\.env$|secret|credential|\\\\.pem$|\\\\.key$\")",
+      "Bash(grep -niE \"JWT_SECRET\\\\s*=\\\\s*[a-zA-Z0-9]|SMTP_PASS\\\\s*=\\\\s*[a-zA-Z0-9]|password\\\\s*:\\\\s*['\\\\\"][a-zA-Z0-9]{4,}['\\\\\"]|AKIA[0-9A-Z]{16}\")",
+      "Bash(npm audit *)"
     ]
   }
 }

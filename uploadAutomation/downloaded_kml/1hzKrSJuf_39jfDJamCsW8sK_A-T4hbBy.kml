@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document>
+	<name>AR BAmboo plant. over 1.0 ha at West Lambucherra under Srirampur Beat during 2026-27-19_26_43.kml</name>
+	<StyleMap id="msn_ylw-pushpin">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#sn_ylw-pushpin</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#sh_ylw-pushpin</styleUrl>
+		</Pair>
+	</StyleMap>
+	<Style id="sh_ylw-pushpin">
+		<IconStyle>
+			<scale>1.3</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>
+			</Icon>
+			<hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
+		<BalloonStyle>
+		</BalloonStyle>
+		<PolyStyle>
+			<fill>0</fill>
+		</PolyStyle>
+	</Style>
+	<Style id="sn_ylw-pushpin">
+		<IconStyle>
+			<scale>1.1</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>
+			</Icon>
+			<hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
+		<BalloonStyle>
+		</BalloonStyle>
+		<PolyStyle>
+			<fill>0</fill>
+		</PolyStyle>
+	</Style>
+	<Placemark>
+		<name>AR BAmboo plant. over 1.0 ha at West Lambucherra under Srirampur Beat during 2026-27-19_26_43</name>
+		<styleUrl>#msn_ylw-pushpin</styleUrl>
+		<Polygon>
+			<tessellate>1</tessellate>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						91.76551155575038,24.17662997652241,0 91.76549749236403,24.17652974597818,0 91.76538156913998,24.17629766472604,0 91.76532752414869,24.1762487481529,0 91.76530565834045,24.17609881181399,0 91.76536674745358,24.175827241711,0 91.76541785356812,24.17567881803545,0 91.76551113165866,24.17554682743151,0 91.76554407975458,24.17555611670145,0 91.76560904420649,24.1755884266422,0 91.76581821264656,24.17563667730577,0 91.76603703788219,24.17565259888303,0 91.76632074218871,24.1756099408052,0 91.76646905816197,24.17570682351337,0 91.76620681234691,24.17658134724587,0 91.76612803545454,24.17657217355756,0 91.76595014541252,24.17670651300371,0 91.76581357834667,24.17675212732395,0 91.76556763646448,24.17670569020361,0 91.76551155575038,24.17662997652241,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+		<atom:link rel="app" href="https://www.google.com/earth/about/versions/#earth-pro" title="Google Earth Pro 7.3.7.1155"></atom:link>
+	</Placemark>
+</Document>
+</kml>

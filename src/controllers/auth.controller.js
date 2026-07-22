@@ -79,6 +79,7 @@ const changePassword = async (req, res) => {
   }
 };
 
+// Disabled pending SMTP credentials from the department; route is commented out in auth.routes.js
 const forgotPassword = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -125,6 +126,7 @@ const forgotPassword = async (req, res) => {
   }
 };
 
+// Disabled pending SMTP credentials from the department; route is commented out in auth.routes.js
 const resetPassword = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
