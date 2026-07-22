@@ -4,6 +4,7 @@ const path = require("path");
 const pool = require("../config/db");
 const redis = require("../config/redis");
 const updateLastUpdated = require("../helpers/updateLastUpdated");
+const { verifyAllFileSignatures } = require("../helpers/verifyFileSignature");
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -257,6 +258,12 @@ const addImages = async (req, res) => {
   }
   if (!req.files || req.files.length === 0) {
     return res.status(422).json({ error: "No images uploaded" });
+  }
+
+  const validSignatures = await verifyAllFileSignatures(req.files, "image");
+  if (!validSignatures) {
+    req.files.forEach((f) => fs.unlink(f.path, () => {}));
+    return res.status(422).json({ error: "File content does not match its extension" });
   }
 
   try {

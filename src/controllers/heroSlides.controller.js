@@ -5,6 +5,7 @@ const { validationResult } = require("express-validator");
 const pool = require("../config/db");
 const redis = require("../config/redis");
 const updateLastUpdated = require("../helpers/updateLastUpdated");
+const { verifyFileSignature } = require("../helpers/verifyFileSignature");
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -69,6 +70,14 @@ const create = async (req, res) => {
   if (!errors.isEmpty()) {
     if (req.file) fs.unlink(req.file.path, () => {});
     return res.status(422).json({ errors: errors.array() });
+  }
+
+  if (req.file) {
+    const validSignature = await verifyFileSignature(req.file.path, "image");
+    if (!validSignature) {
+      fs.unlink(req.file.path, () => {});
+      return res.status(422).json({ error: "File content does not match its extension" });
+    }
   }
 
   const imagePath = req.file ? moveToHero(req.file) : null;
@@ -142,6 +151,11 @@ const update = async (req, res) => {
     const prev = existing[0];
     let imagePath = prev.image_path;
     if (req.file) {
+      const validSignature = await verifyFileSignature(req.file.path, "image");
+      if (!validSignature) {
+        fs.unlink(req.file.path, () => {});
+        return res.status(422).json({ error: "File content does not match its extension" });
+      }
       removeFile(prev.image_path);
       imagePath = moveToHero(req.file);
     }

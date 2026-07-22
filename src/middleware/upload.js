@@ -65,7 +65,6 @@ function wrap(instance, method) {
   };
 }
 
-const uploadSingle   = wrap(combined,    'single');   // (fieldName)
 const uploadMultiple = wrap(combined,    'array');    // (fieldName, maxCount)
 const uploadImage    = wrap(imageUpload, 'single');   // (fieldName) — images only, 10 MB
 const uploadPdf      = wrap(pdfUpload,   'single');   // (fieldName) — PDF only, 20 MB
@@ -104,4 +103,4 @@ const uploadFields = (fields) => {
   };
 };
 
-module.exports = { uploadSingle, uploadMultiple, uploadImage, uploadPdf, uploadKml, uploadFields };
+module.exports = { uploadMultiple, uploadImage, uploadPdf, uploadKml, uploadFields };

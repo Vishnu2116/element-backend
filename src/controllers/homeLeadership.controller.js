@@ -4,6 +4,7 @@ const path = require("path");
 const pool = require("../config/db");
 const redis = require("../config/redis");
 const updateLastUpdated = require("../helpers/updateLastUpdated");
+const { verifyFileSignature } = require("../helpers/verifyFileSignature");
 
 const CACHE_KEY = "cache:home:leadership";
 const LEADERSHIP_DIR = path.join(process.cwd(), "uploads", "home-leadership");
@@ -71,6 +72,14 @@ const updateSlot = async (req, res) => {
   if (!name || !name.trim()) {
     if (req.file) fs.unlink(req.file.path, () => {});
     return res.status(422).json({ error: "name is required" });
+  }
+
+  if (req.file) {
+    const validSignature = await verifyFileSignature(req.file.path, "image");
+    if (!validSignature) {
+      fs.unlink(req.file.path, () => {});
+      return res.status(422).json({ error: "File content does not match its extension" });
+    }
   }
 
   try {

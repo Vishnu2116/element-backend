@@ -5,6 +5,7 @@ const { validationResult, body } = require("express-validator");
 const pool = require("../config/db");
 const redis = require("../config/redis");
 const updateLastUpdated = require("../helpers/updateLastUpdated");
+const { verifyFileSignature, verifyAllFileSignatures } = require("../helpers/verifyFileSignature");
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -120,6 +121,14 @@ const create = async (req, res) => {
     return res.status(422).json({ errors: errors.array() });
   }
 
+  if (req.file) {
+    const validSignature = await verifyFileSignature(req.file.path, "image");
+    if (!validSignature) {
+      fs.unlink(req.file.path, () => {});
+      return res.status(422).json({ error: "File content does not match its extension" });
+    }
+  }
+
   const coverPath = req.file ? moveToCover(req.file) : null;
 
   try {
@@ -179,6 +188,11 @@ const update = async (req, res) => {
     const prev = existing[0];
     let coverPath = prev.cover_image_path;
     if (req.file) {
+      const validSignature = await verifyFileSignature(req.file.path, "image");
+      if (!validSignature) {
+        fs.unlink(req.file.path, () => {});
+        return res.status(422).json({ error: "File content does not match its extension" });
+      }
       removeFile(prev.cover_image_path);
       coverPath = moveToCover(req.file);
     }
@@ -275,6 +289,12 @@ const addImages = async (req, res) => {
   }
   if (!req.files || req.files.length === 0) {
     return res.status(422).json({ error: "No images uploaded" });
+  }
+
+  const validSignatures = await verifyAllFileSignatures(req.files, "image");
+  if (!validSignatures) {
+    req.files.forEach((f) => fs.unlink(f.path, () => {}));
+    return res.status(422).json({ error: "File content does not match its extension" });
   }
 
   try {

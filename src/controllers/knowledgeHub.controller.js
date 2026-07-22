@@ -4,6 +4,7 @@ const { validationResult, body } = require("express-validator");
 const pool = require("../config/db");
 const redis = require("../config/redis");
 const updateLastUpdated = require("../helpers/updateLastUpdated");
+const { verifyFileSignature } = require("../helpers/verifyFileSignature");
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -237,6 +238,16 @@ const create = async (req, res) => {
   }
   const docFile = req.files?.file?.[0] || null;
   const thumbFile = req.files?.thumbnail?.[0] || null;
+
+  if (docFile && !(await verifyFileSignature(docFile.path, "pdf"))) {
+    cleanupReqFiles(req.files);
+    return res.status(422).json({ error: "File content does not match its extension" });
+  }
+  if (thumbFile && !(await verifyFileSignature(thumbFile.path, "image"))) {
+    cleanupReqFiles(req.files);
+    return res.status(422).json({ error: "File content does not match its extension" });
+  }
+
   const filePath = docFile ? moveToFiles(docFile) : null;
   const thumbnailPath = thumbFile ? moveToThumbnails(thumbFile) : null;
   const fileSizeKB = docFile ? Math.round(docFile.size / 1024) : null;
@@ -294,6 +305,16 @@ const update = async (req, res) => {
     const prev = existing[0];
     const docFile = req.files?.file?.[0] || null;
     const thumbFile = req.files?.thumbnail?.[0] || null;
+
+    if (docFile && !(await verifyFileSignature(docFile.path, "pdf"))) {
+      cleanupReqFiles(req.files);
+      return res.status(422).json({ error: "File content does not match its extension" });
+    }
+    if (thumbFile && !(await verifyFileSignature(thumbFile.path, "image"))) {
+      cleanupReqFiles(req.files);
+      return res.status(422).json({ error: "File content does not match its extension" });
+    }
+
     let filePath = prev.file_path;
     let thumbnailPath = prev.thumbnail_path;
     let fileSizeKB = prev.file_size;

@@ -6,6 +6,7 @@ const pool = require("../config/db");
 const redis = require("../config/redis");
 const updateLastUpdated = require("../helpers/updateLastUpdated");
 const { VALID_DISTRICTS } = require("./gis.controller");
+const { verifyFileSignature } = require("../helpers/verifyFileSignature");
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -202,6 +203,14 @@ const create = async (req, res) => {
     return res.status(422).json({ errors: errors.array() });
   }
 
+  if (req.file) {
+    const validSignature = await verifyFileSignature(req.file.path, "image");
+    if (!validSignature) {
+      fs.unlink(req.file.path, () => {});
+      return res.status(422).json({ error: "File content does not match its extension" });
+    }
+  }
+
   const photoPath = req.file ? moveToOfficials(req.file) : null;
 
   try {
@@ -282,6 +291,11 @@ const update = async (req, res) => {
     const prev = existing[0];
     let photoPath = prev.photo_path;
     if (req.file) {
+      const validSignature = await verifyFileSignature(req.file.path, "image");
+      if (!validSignature) {
+        fs.unlink(req.file.path, () => {});
+        return res.status(422).json({ error: "File content does not match its extension" });
+      }
       removeFile(prev.photo_path);
       photoPath = moveToOfficials(req.file);
     }

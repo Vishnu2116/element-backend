@@ -6,7 +6,7 @@ const {
 } = require('../controllers/heroSlides.controller');
 const auth = require('../middleware/auth');
 const { globalLimiter } = require('../middleware/rateLimiter');
-const { uploadSingle } = require('../middleware/upload');
+const { uploadImage } = require('../middleware/upload');
 
 const router = Router();
 
@@ -19,8 +19,8 @@ router.get('/hero-slides', globalLimiter, getAll);
 router.put('/admin/hero-slides/reorder', auth, reorder);
 
 router.get   ('/admin/hero-slides/:id', auth, getById);
-router.post  ('/admin/hero-slides',     auth, uploadSingle('image'), titleRequired, create);
-router.put   ('/admin/hero-slides/:id', auth, uploadSingle('image'), titleRequired, update);
+router.post  ('/admin/hero-slides',     auth, uploadImage('image'), titleRequired, create);
+router.put   ('/admin/hero-slides/:id', auth, uploadImage('image'), titleRequired, update);
 router.delete('/admin/hero-slides/:id', auth, remove);
 
 module.exports = router;

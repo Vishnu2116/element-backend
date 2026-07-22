@@ -5,6 +5,7 @@ const { body, validationResult } = require('express-validator');
 const pool  = require('../config/db');
 const redis = require('../config/redis');
 const updateLastUpdated = require('../helpers/updateLastUpdated');
+const { verifyFileSignature } = require('../helpers/verifyFileSignature');
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PHONE_REGEX = /^[0-9+\-\s()]{7,15}$/;
@@ -189,6 +190,14 @@ const createDocument = async (req, res) => {
     return res.status(422).json({ errors: errors.array() });
   }
 
+  if (req.file) {
+    const validSignature = await verifyFileSignature(req.file.path, 'pdf');
+    if (!validSignature) {
+      fs.unlink(req.file.path, () => {});
+      return res.status(422).json({ error: 'File content does not match its extension' });
+    }
+  }
+
   const filePath   = req.file ? moveToRti(req.file) : null;
   const fileSizeKB = req.file ? Math.round(req.file.size / 1024) : null;
 
@@ -248,6 +257,11 @@ const updateDocument = async (req, res) => {
     let fileType   = prev.file_type;
 
     if (req.file) {
+      const validSignature = await verifyFileSignature(req.file.path, 'pdf');
+      if (!validSignature) {
+        fs.unlink(req.file.path, () => {});
+        return res.status(422).json({ error: 'File content does not match its extension' });
+      }
       removeFile(prev.file_path);
       filePath   = moveToRti(req.file);
       fileSizeKB = Math.round(req.file.size / 1024);
