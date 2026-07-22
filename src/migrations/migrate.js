@@ -29,7 +29,9 @@ const migrations = [
 ];
 
 async function runMigrations() {
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const pool = new Pool({
+    connectionString: process.env.MIGRATION_DATABASE_URL || process.env.DATABASE_URL,
+  });
 
   // Ensure a tracking table exists so we skip already-applied files
   await pool.query(`
