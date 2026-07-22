@@ -37,6 +37,9 @@ const routes = require("./src/routes/index");
 
 const app = express();
 
+// Trust exactly one hop (the reverse proxy in front of this app in production).
+app.set('trust proxy', 1);
+
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
