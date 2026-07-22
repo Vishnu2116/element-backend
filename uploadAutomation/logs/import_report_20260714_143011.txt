@@ -1,9 +1,0 @@
-ELEMENT GIS Import Report — 20260714_143011
-Excel file: Plantation_sanctioned_attached KML (1).xlsx
-============================================================
-Total valid rows processed: 185
-Successfully imported:      185
-Failed:                      0
-Skipped during parse:        82
-
-See skipped_rows_20260714_143011.csv, imported_rows_20260714_143011.csv, failed_rows_20260714_143011.csv for details.
