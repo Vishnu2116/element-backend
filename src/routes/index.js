@@ -16,8 +16,10 @@ router.use("/", require("./gis.routes"));
 router.use("/", require("./settings.routes"));
 router.use("/", require("./rti.routes"));
 router.use("/", require("./visitor.routes"));
-router.use("/", require("./contact.routes"));
-router.use("/", require("./feedback.routes"));
+// Disabled: Contact/Feedback forms removed from frontend UI, routes
+// no longer needed. Re-enable if forms are restored.
+// router.use("/", require("./contact.routes"));
+// router.use("/", require("./feedback.routes"));
 
 router.get("/health", (req, res) => res.json({ status: "ok" }));
 
