@@ -26,7 +26,15 @@
       "Bash(node -e \"const v=require\\('./node_modules/file-type/package.json'\\); console.log\\('version:', v.version, 'type:', v.type\\)\")",
       "Bash(node -e \"try{require\\('file-type'\\);console.log\\('CJS require works'\\)}catch\\(e\\){console.log\\('require failed:', e.code\\)}\")",
       "Bash(node -e \"import\\('file-type'\\).then\\(m=>console.log\\('dynamic import works, exports:', Object.keys\\(m\\)\\)\\).catch\\(e=>console.log\\('import failed', e.message\\)\\)\")",
-      "Bash(node -e \"console.log\\(Object.keys\\(require\\('file-type'\\)\\)\\)\")"
+      "Bash(node -e \"console.log\\(Object.keys\\(require\\('file-type'\\)\\)\\)\")",
+      "Bash(git log *)",
+      "Bash(brew list *)",
+      "Bash(npx --no-install gitleaks --version)",
+      "Bash(grep -rn \"UPLOAD_DIR\" . --include=\"*.js\" --include=\"*.env*\" -not -path \"*/node_modules/*\")",
+      "Bash(node -e *)",
+      "Bash(awk '/CREATE TABLE/{table=$3} /TEXT,?$/{print table\": \"$0}' src/migrations/001_initial_schema.sql)",
+      "Bash(git show *)",
+      "Bash(python3 -)"
     ]
   }
 }

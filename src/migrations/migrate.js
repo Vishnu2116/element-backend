@@ -26,11 +26,14 @@ const migrations = [
   "014_contact_feedback.sql",
   "015_replace_gis_sites.sql",
   "016_admin_token_version.sql",
+  "017_admin_password_history.sql",
+  "018_admin_mfa.sql",
 ];
 
 async function runMigrations() {
   const pool = new Pool({
-    connectionString: process.env.MIGRATION_DATABASE_URL || process.env.DATABASE_URL,
+    connectionString:
+      process.env.MIGRATION_DATABASE_URL || process.env.DATABASE_URL,
   });
 
   // Ensure a tracking table exists so we skip already-applied files
