@@ -3,10 +3,12 @@ const { body } = require("express-validator");
 const {
   login,
   verifyMfaLogin,
+  confirmLogin,
   setupMfa,
   verifyMfaSetup,
   logout,
   getMe,
+  checkSession,
   changePassword,
   forgotPassword,
   resetPassword,
@@ -74,8 +76,10 @@ const verifyMfaLoginValidators = [
 ];
 router.post("/login", strictLimiter, loginValidators, login);
 router.post("/mfa/login", strictLimiter, verifyMfaLoginValidators, verifyMfaLogin);
+router.post("/confirm-login", strictLimiter, confirmLogin);
 router.post("/logout", auth, logout);
 router.get("/me", auth, getMe);
+router.get("/session-check", auth, checkSession);
 router.put("/change-password", auth, changePasswordValidators, changePassword);
 router.post("/mfa/setup", auth, setupMfa);
 router.post("/mfa/verify-setup", auth, verifyMfaSetupValidators, verifyMfaSetup);

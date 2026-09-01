@@ -33,10 +33,13 @@ const auth = async (req, res, next) => {
         error: "Session invalidated — logged in from another location.",
       });
     }
-    await redis.expire(sessionKey, 15 * 60);
-    console.log(
-      `Session touched, expiry reset to 15m: admin_id=${payload.id} sid=${payload.sid} at ${new Date().toISOString()}`,
-    );
+    const isSessionCheck = req.path === "/session-check";
+    if (!isSessionCheck) {
+      await redis.expire(sessionKey, 15 * 60);
+      console.log(
+        `Session touched, expiry reset to 15m: admin_id=${payload.id} sid=${payload.sid} at ${new Date().toISOString()}`,
+      );
+    }
 
     req.user = payload;
     next();

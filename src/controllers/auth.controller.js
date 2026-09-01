@@ -7,6 +7,32 @@ const QRCode = require("qrcode");
 const pool = require("../config/db");
 const redis = require("../config/redis");
 const { sendEmail } = require("../helpers/mailer");
+const createSessionAndRespond = async (admin, res, { skipActiveCheck = false } = {}) => {
+  if (!skipActiveCheck) {
+    const existingSession = await redis.get(`session_active:${admin.id}`);
+    if (existingSession) {
+      const tempToken = jwt.sign(
+        { id: admin.id, purpose: "login_confirm" },
+        process.env.JWT_SECRET,
+        { expiresIn: "5m", algorithm: "HS256" },
+      );
+      return res.json({ already_active: true, temp_token: tempToken });
+    }
+  }
+  const sessionId = crypto.randomUUID();
+  const payload = {
+    id: admin.id,
+    email: admin.email,
+    name: admin.name,
+    sid: sessionId,
+  };
+  const token = jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN || "1h",
+    algorithm: "HS256",
+  });
+  await redis.set(`session_active:${admin.id}`, sessionId, { EX: 15 * 60 });
+  return res.json({ token, admin: payload });
+};
 const login = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -35,19 +61,7 @@ const login = async (req, res) => {
       );
       return res.json({ mfa_required: true, temp_token: tempToken });
     }
-    const sessionId = crypto.randomUUID();
-    const payload = {
-      id: admin.id,
-      email: admin.email,
-      name: admin.name,
-      sid: sessionId,
-    };
-    const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES_IN || "1h",
-      algorithm: "HS256",
-    });
-    await redis.set(`session_active:${admin.id}`, sessionId, { EX: 15 * 60 });
-    return res.json({ token, admin: payload });
+    return await createSessionAndRespond(admin, res);
   } catch (err) {
     console.error("login error:", err.message);
     return res.status(500).json({ error: "Internal server error" });
@@ -84,21 +98,37 @@ const verifyMfaLogin = async (req, res) => {
     if (!isValid) {
       return res.status(401).json({ error: "Invalid code" });
     }
-    const sessionId = crypto.randomUUID();
-    const payload = {
-      id: admin.id,
-      email: admin.email,
-      name: admin.name,
-      sid: sessionId,
-    };
-    const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES_IN || "1h",
-      algorithm: "HS256",
-    });
-    await redis.set(`session_active:${admin.id}`, sessionId, { EX: 15 * 60 });
-    return res.json({ token, admin: payload });
+    return await createSessionAndRespond(admin, res);
   } catch (err) {
     console.error("verifyMfaLogin error:", err.message);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+const confirmLogin = async (req, res) => {
+  const { temp_token } = req.body;
+  let decoded;
+  try {
+    decoded = jwt.verify(temp_token, process.env.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
+  } catch (err) {
+    return res.status(400).json({ error: "Invalid or expired confirmation" });
+  }
+  if (decoded.purpose !== "login_confirm") {
+    return res.status(400).json({ error: "Invalid or expired confirmation" });
+  }
+  try {
+    const { rows } = await pool.query(
+      "SELECT id, email, name FROM admins WHERE id = $1",
+      [decoded.id],
+    );
+    const admin = rows[0];
+    if (!admin) {
+      return res.status(400).json({ error: "Invalid or expired confirmation" });
+    }
+    return await createSessionAndRespond(admin, res, { skipActiveCheck: true });
+  } catch (err) {
+    console.error("confirmLogin error:", err.message);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -162,6 +192,9 @@ const logout = async (req, res) => {
 const getMe = (req, res) => {
   const { id, email, name } = req.user;
   return res.json({ id, email, name });
+};
+const checkSession = (req, res) => {
+  return res.json({ valid: true });
 };
 const changePassword = async (req, res) => {
   const errors = validationResult(req);
@@ -307,10 +340,12 @@ const resetPassword = async (req, res) => {
 module.exports = {
   login,
   verifyMfaLogin,
+  confirmLogin,
   setupMfa,
   verifyMfaSetup,
   logout,
   getMe,
+  checkSession,
   changePassword,
   forgotPassword,
   resetPassword,
